@@ -1,0 +1,69 @@
+export type SymptomInput = {
+  bodyPart: string;
+  symptoms: string[];
+  duration: string;
+  severity: string;
+  note: string;
+};
+
+export type SymptomResult = {
+  conditions: string[];
+  departments: string[];
+  summary: string;
+  disclaimer: string;
+};
+
+const FALLBACK_DISCLAIMER =
+  "이 결과는 참고용 정보이며 의학적 진단이 아닙니다. 정확한 진단과 치료는 반드시 병원에서 의사와 상담하세요.";
+
+export function buildSymptomPrompt(input: SymptomInput) {
+  return `당신은 사용자가 병원에 가기 전 참고할 수 있도록 도와주는 의료 정보 안내 도우미입니다.
+아래 증상 정보를 바탕으로 가능성 있는 질환 후보와 방문하면 좋을 병원 진료과를 안내해주세요.
+
+[증상 정보]
+- 아픈 부위: ${input.bodyPart}
+- 증상: ${input.symptoms.join(", ")}
+- 지속 기간: ${input.duration}
+- 통증/불편함 정도: ${input.severity}
+- 추가 설명: ${input.note || "없음"}
+
+규칙:
+- 확정적인 진단 표현("~입니다") 대신 "~일 가능성이 있습니다" 같은 완곡한 표현을 사용하세요.
+- 반드시 정확한 진단은 병원에서 받아야 한다는 점을 강조하세요.
+- 아래 JSON 형식으로만 답변하고, 다른 텍스트나 마크다운 코드 블록은 포함하지 마세요.
+
+{
+  "conditions": ["가능성 있는 질환 후보 2~3개"],
+  "departments": ["추천 진료과 1~2개, 예: 정형외과, 내과, 피부과 등"],
+  "summary": "한두 문장으로 된 요약 설명",
+  "disclaimer": "정확한 진단은 병원에서 받아야 한다는 안내 문구"
+}`;
+}
+
+export function parseSymptomResult(raw: string): SymptomResult {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      conditions: Array.isArray(parsed.conditions) ? parsed.conditions : [],
+      departments: Array.isArray(parsed.departments) ? parsed.departments : [],
+      summary: typeof parsed.summary === "string" ? parsed.summary : raw,
+      disclaimer:
+        typeof parsed.disclaimer === "string" && parsed.disclaimer
+          ? parsed.disclaimer
+          : FALLBACK_DISCLAIMER,
+    };
+  } catch {
+    return {
+      conditions: [],
+      departments: [],
+      summary: raw,
+      disclaimer: FALLBACK_DISCLAIMER,
+    };
+  }
+}

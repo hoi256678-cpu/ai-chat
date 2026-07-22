@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* pastel sky-blue system — deliberately single-theme (no dark-mode invert),
+     tuned so bubble/background tints stay soft while --accent stays legible for
+     white button/icon labels */
+  --bg: #eff7ff;
+  --surface: #ffffff;
+  --tint: #e1f1fe;
+  --bubble-mine: #cdeaff;
+  --bubble-other: #f4f7fa;
+  --accent: #2f87e0;
+  --accent-deep: #1d6fc2;
+  --ink: #16212c;
+  --sub: #7e93a7;
+  --line: #dcebf7;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-tint: var(--tint);
+  --color-bubble-mine: var(--bubble-mine);
+  --color-bubble-other: var(--bubble-other);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-line: var(--line);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* signature mark — layered sky-blue orb used as the app mark and AI avatar
+   everywhere (main hero, chat list row, chat room header/bubbles) */
+.orb-mark {
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 32% 28%,
+    #ffffff 0%,
+    var(--bubble-mine) 40%,
+    var(--accent) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65),
+    0 6px 16px -6px rgba(47, 135, 224, 0.5);
+}
+
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.orb-mark--hero {
+  animation: orb-breathe 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-mark--hero {
+    animation: none;
+  }
+}
+
+/* indeterminate loading bar — symptom-check AI analysis step */
+@keyframes loading-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(60%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.loading-bar-fill {
+  animation: loading-sweep 1.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar-fill {
+    animation: none;
+  }
 }

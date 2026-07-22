@@ -17,11 +17,17 @@ export default function LoginPage() {
       return;
     }
     setSession({ email });
-    router.push("/chat");
+    router.push("/main");
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 py-24 dark:bg-black">
+    <main
+      className="flex flex-1 flex-col items-center justify-center overflow-y-auto bg-zinc-50 px-6 dark:bg-black"
+      style={{
+        paddingTop: "max(3rem, env(safe-area-inset-top))",
+        paddingBottom: "max(3rem, env(safe-area-inset-bottom))",
+      }}
+    >
       <div className="flex w-full max-w-sm flex-col items-center">
         <h1 className="mb-2 text-center text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
           AI Chat
@@ -44,7 +50,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:text-zinc-50"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:text-zinc-50"
               />
             </label>
 
@@ -57,7 +63,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:text-zinc-50"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-black dark:text-zinc-50"
               />
             </label>
 

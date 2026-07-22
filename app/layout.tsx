@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   description: "A simple AI chat app",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,10 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="ko"
+      className={`${geistSans.variable} ${geistMono.variable} h-dvh antialiased`}
     >
-      <body className="h-full flex flex-col">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden">{children}</body>
     </html>
   );
 }
