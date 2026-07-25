@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, getSession } from "@/lib/session";
+import { createClient } from "@/lib/supabase/client";
 import { formatDateKey, getDatesWithHistory, todayKey } from "@/lib/chatHistory";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -22,17 +22,15 @@ export default function CalendarPage() {
   const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setHistoryDates(new Set(getDatesWithHistory()));
-    setReady(true);
-  }, [router]);
+    getDatesWithHistory().then((dates) => {
+      setHistoryDates(new Set(dates));
+      setReady(true);
+    });
+  }, []);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.replace("/");
   }
 

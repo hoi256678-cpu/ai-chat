@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSession } from "@/lib/session";
 import { getDayMessages, type StoredMessage } from "@/lib/chatHistory";
 import { ChatMessages } from "@/components/ChatMessages";
 
@@ -28,14 +27,11 @@ export default function DiaryDayPage({
   const [messages, setMessages] = useState<StoredMessage[]>([]);
 
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setMessages(getDayMessages(date));
-    setReady(true);
-  }, [router, date]);
+    getDayMessages(date).then((msgs) => {
+      setMessages(msgs);
+      setReady(true);
+    });
+  }, [date]);
 
   if (!ready) return null;
 

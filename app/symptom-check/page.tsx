@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSession } from "@/lib/session";
 import type { SymptomResult } from "@/lib/symptomCheck";
+import { saveSymptomCheck } from "@/lib/symptomHistory";
 import { BodyDiagram } from "@/components/BodyDiagram";
 
 const QUICK_BODY_PARTS = ["피부", "전신", "기타"];
@@ -11,6 +11,8 @@ const QUICK_BODY_PARTS = ["피부", "전신", "기타"];
 // shown only after a specific diagram region is selected, to narrow down further
 const SUB_BODY_PARTS: Record<string, string[]> = {
   "머리": ["눈", "코", "귀", "입/치아"],
+  "팔": ["팔꿈치", "손목/손"],
+  "다리": ["무릎", "발목/발"],
 };
 
 const SYMPTOMS_BY_PART: Record<string, string[]> = {
@@ -60,7 +62,6 @@ const TOTAL_STEPS = 5;
 
 export default function SymptomCheckPage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0);
 
   const [bodyPartView, setBodyPartView] = useState<"front" | "back">("front");
@@ -79,16 +80,15 @@ export default function SymptomCheckPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<SymptomResult | null>(null);
 
-  useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
+  function selectBodyPart(part: string) {
+    // Clicking the already-selected part again deselects it.
+    if (bodyPart === part && !showCustomBodyPart) {
+      setBodyPart(null);
+      setSymptoms([]);
+      setShowCustomSymptom(false);
+      setCustomSymptom("");
       return;
     }
-    setReady(true);
-  }, [router]);
-
-  function selectBodyPart(part: string) {
     setBodyPart(part);
     setShowCustomBodyPart(false);
     setSymptoms([]);
@@ -97,6 +97,15 @@ export default function SymptomCheckPage() {
   }
 
   function selectCustomBodyPart() {
+    if (showCustomBodyPart) {
+      setBodyPart(null);
+      setShowCustomBodyPart(false);
+      setCustomBodyPart("");
+      setSymptoms([]);
+      setShowCustomSymptom(false);
+      setCustomSymptom("");
+      return;
+    }
     setBodyPart("");
     setShowCustomBodyPart(true);
     setSymptoms([]);
@@ -153,17 +162,28 @@ export default function SymptomCheckPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? "결과를 받지 못했습니다.");
+        throw new Error(data.error ?? "결과를 받지 못했어요.");
       }
       setResult(data as SymptomResult);
+
+      // Best-effort: a save failure shouldn't hide the AI result the
+      // user is already looking at.
+      saveSymptomCheck(
+        {
+          bodyPart: bodyPart ?? "",
+          symptoms: finalSymptoms,
+          duration: duration ?? "",
+          severity: severity ?? "",
+          note,
+        },
+        data as SymptomResult
+      ).catch((err) => console.error("증상체크 기록 저장 실패:", err));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : "오류가 발생했어요.");
     } finally {
       setLoading(false);
     }
   }
-
-  if (!ready) return null;
 
   const symptomOptions = getSymptomOptions(bodyPart);
 
@@ -195,7 +215,13 @@ export default function SymptomCheckPage() {
             />
           </svg>
         </button>
-        <span className="font-semibold text-ink">증상 체크</span>
+        <span className="flex-1 font-semibold text-ink">증상 체크</span>
+        <button
+          onClick={() => router.push("/symptom-check/history")}
+          className="shrink-0 text-xs font-medium text-sub transition hover:text-ink"
+        >
+          지난 기록
+        </button>
       </header>
 
       <div
@@ -205,7 +231,7 @@ export default function SymptomCheckPage() {
         <div className="mx-auto flex w-full max-w-md flex-col">
           {!result && (
             <>
-              <p className="mb-6 text-center text-xs font-medium text-sub">
+              <p className="font-display mb-6 text-center text-xs font-medium tracking-wide text-sub">
                 STEP {step + 1} / {TOTAL_STEPS}
               </p>
 
@@ -244,18 +270,22 @@ export default function SymptomCheckPage() {
                     </div>
                   )}
 
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {QUICK_BODY_PARTS.map((part) => (
-                      <ChipCard
-                        key={part}
-                        label={part}
-                        selected={part === "기타" ? showCustomBodyPart : bodyPart === part}
-                        onClick={() =>
-                          part === "기타" ? selectCustomBodyPart() : selectBodyPart(part)
-                        }
-                      />
-                    ))}
-                  </div>
+                  {(bodyPart || showCustomBodyPart) && (
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {QUICK_BODY_PARTS.map((part) => (
+                        <ChipCard
+                          key={part}
+                          label={part}
+                          selected={
+                            part === "기타" ? showCustomBodyPart : bodyPart === part
+                          }
+                          onClick={() =>
+                            part === "기타" ? selectCustomBodyPart() : selectBodyPart(part)
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
 
                   {showCustomBodyPart && (
                     <input
@@ -352,7 +382,7 @@ export default function SymptomCheckPage() {
               )}
 
               {error && (
-                <p className="mt-4 text-center text-sm text-red-500" role="alert">
+                <p className="mt-4 text-center text-sm text-danger" role="alert">
                   {error}
                 </p>
               )}

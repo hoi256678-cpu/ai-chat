@@ -68,8 +68,14 @@ export function ChatMessages({
       {loading && (
         <div className="flex items-end gap-2">
           <div className="orb-mark h-7 w-7 shrink-0 self-end" aria-hidden />
-          <div className="max-w-[75%] rounded-2xl rounded-bl-md bg-bubble-other px-4 py-2.5 text-[15px] text-sub shadow-[0_1px_2px_rgba(22,33,44,0.06)]">
-            생각하는 중…
+          <div
+            className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-bubble-other px-4 py-3.5 shadow-[0_1px_2px_rgba(22,33,44,0.06)]"
+            role="status"
+            aria-label="입력 중"
+          >
+            <span className="typing-dot h-2 w-2 rounded-full bg-sub/60" />
+            <span className="typing-dot h-2 w-2 rounded-full bg-sub/60" />
+            <span className="typing-dot h-2 w-2 rounded-full bg-sub/60" />
           </div>
         </div>
       )}

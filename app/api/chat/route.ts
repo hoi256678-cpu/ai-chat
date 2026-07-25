@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   const messages: ChatMessage[] = body?.messages ?? [];
 
   if (messages.length === 0) {
-    return Response.json({ error: "메시지가 없습니다." }, { status: 400 });
+    return Response.json({ error: "메시지를 입력해주세요." }, { status: 400 });
   }
 
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return Response.json({ reply });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+      error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요.";
     return Response.json({ error: message }, { status: 500 });
   }
 }

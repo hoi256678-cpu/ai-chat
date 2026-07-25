@@ -9,7 +9,7 @@ export async function generateReply(messages: ChatMessage[]) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY가 설정되지 않았습니다. .env.local 파일을 확인하세요."
+      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
     );
   }
 
@@ -29,14 +29,15 @@ export async function generateReply(messages: ChatMessage[]) {
 
   if (!res.ok) {
     const errorBody = await res.text();
-    throw new Error(`Gemini API 오류 (${res.status}): ${errorBody}`);
+    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
+    throw new Error("AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.");
   }
 
   const data = await res.json();
   const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (typeof reply !== "string") {
-    throw new Error("Gemini가 유효한 응답을 반환하지 않았습니다.");
+    throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
   }
 
   return reply;

@@ -2,36 +2,43 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, getSession } from "@/lib/session";
+import { createClient } from "@/lib/supabase/client";
 
 export default function MainPage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
 
+  // proxy.ts already guarantees this page is only reached when
+  // authenticated — this just fetches the name to display it.
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setEmail(session.email);
-    setReady(true);
-  }, [router]);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      // Prefer the nickname set at signup; fall back to the email's
+      // local-part ("hoi256678") for accounts created before nicknames
+      // existed, or a wall of text with the full address either way.
+      const nickname = data.user?.user_metadata?.nickname;
+      setDisplayName(nickname || data.user?.email?.split("@")[0] || "");
+    });
+  }, []);
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.replace("/");
   }
-
-  if (!ready) return null;
 
   return (
     <main className="flex flex-1 flex-col overflow-y-auto bg-bg">
       <div
-        className="flex justify-end px-6"
+        className="flex items-center justify-end gap-4 px-6"
         style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
       >
+        <button
+          onClick={() => router.push("/settings")}
+          className="text-xs font-medium text-sub transition hover:text-ink"
+        >
+          설정
+        </button>
         <button
           onClick={handleLogout}
           className="text-xs font-medium text-sub transition hover:text-ink"
@@ -50,10 +57,10 @@ export default function MainPage() {
         />
 
         <h1 className="text-center text-2xl font-bold tracking-tight text-ink break-words">
-          안녕하세요, {email}
+          안녕하세요, {displayName}님
         </h1>
         <p className="mt-2 text-center text-sm text-sub">
-          AI와 편하게 대화를 나눠보세요.
+          오늘은 어떤 이야기를 나눠볼까요?
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3">

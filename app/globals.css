@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  /* pastel sky-blue system — deliberately single-theme (no dark-mode invert),
-     tuned so bubble/background tints stay soft while --accent stays legible for
-     white button/icon labels */
+  /* "dawn" pastel system — sky blue (calm, focus) warming into a soft
+     blush at the edges (the orb-mark, today-marker, disclaimer accents).
+     Deliberately single-theme (no dark-mode invert); tuned so bubble/
+     background tints stay soft while --accent stays legible for
+     white button/icon labels. */
   --bg: #eff7ff;
   --surface: #ffffff;
   --tint: #e1f1fe;
@@ -11,6 +13,10 @@
   --bubble-other: #f4f7fa;
   --accent: #2f87e0;
   --accent-deep: #1d6fc2;
+  --blush: #ffc9a8;
+  --blush-deep: #f2965f;
+  --danger: #e2685c;
+  --danger-tint: #fdeeec;
   --ink: #16212c;
   --sub: #7e93a7;
   --line: #dcebf7;
@@ -24,27 +30,47 @@
   --color-bubble-other: var(--bubble-other);
   --color-accent: var(--accent);
   --color-accent-deep: var(--accent-deep);
+  --color-blush: var(--blush);
+  --color-blush-deep: var(--blush-deep);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
   --color-ink: var(--ink);
   --color-sub: var(--sub);
   --color-line: var(--line);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, system-ui, Roboto, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+  --font-display: var(--font-display);
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
+  font-family: var(--font-sans);
 }
 
-/* signature mark — layered sky-blue orb used as the app mark and AI avatar
-   everywhere (main hero, chat list row, chat room header/bubbles) */
+/* visible keyboard focus across the app — buttons/inputs/links otherwise
+   only had a border/background change, invisible to keyboard users */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* signature mark — layered "dawn" orb (sky blue warming to blush at the
+   rim) used as the app mark and AI avatar everywhere (main hero, chat
+   header, assistant bubbles) */
 .orb-mark {
   border-radius: 9999px;
   background: radial-gradient(
-    circle at 32% 28%,
+    circle at 30% 26%,
     #ffffff 0%,
-    var(--bubble-mine) 40%,
-    var(--accent) 100%
+    var(--bubble-mine) 38%,
+    var(--accent) 74%,
+    var(--blush) 100%
   );
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.65),
@@ -90,6 +116,65 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .loading-bar-fill {
+    animation: none;
+  }
+}
+
+/* DM-style "typing…" indicator — chat room's assistant bubble while
+   waiting on a Gemini reply, instead of literal loading text */
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dot {
+    animation: none;
+  }
+}
+
+/* symptom-check body diagram — pain marker dropped at the exact tapped
+   point (not a whole-zone fill) */
+@keyframes pain-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.pain-marker {
+  animation: pain-pulse 1.6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pain-marker {
     animation: none;
   }
 }

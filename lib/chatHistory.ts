@@ -1,30 +1,10 @@
-const HISTORY_KEY = "ai-chat-history";
+import { createClient } from "@/lib/supabase/client";
 
 export type StoredMessage = {
   role: "user" | "assistant";
   content: string;
   time: string;
 };
-
-type HistoryMap = Record<string, StoredMessage[]>;
-
-// Placeholder persistence: keeps each day's conversation in localStorage,
-// keyed by "YYYY-MM-DD". Swap this out for real DB-backed storage later —
-// callers only depend on get/append/list so the API surface won't change.
-function readMap(): HistoryMap {
-  if (typeof window === "undefined") return {};
-  const raw = window.localStorage.getItem(HISTORY_KEY);
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as HistoryMap;
-  } catch {
-    return {};
-  }
-}
-
-function writeMap(map: HistoryMap) {
-  window.localStorage.setItem(HISTORY_KEY, JSON.stringify(map));
-}
 
 export function formatDateKey(date: Date) {
   const year = date.getFullYear();
@@ -37,16 +17,34 @@ export function todayKey() {
   return formatDateKey(new Date());
 }
 
-export function getDayMessages(dateKey: string): StoredMessage[] {
-  return readMap()[dateKey] ?? [];
+export async function getDayMessages(dateKey: string): Promise<StoredMessage[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("role,content,time")
+    .eq("date_key", dateKey)
+    .order("created_at");
+
+  if (error) throw error;
+  return (data ?? []) as StoredMessage[];
 }
 
-export function appendDayMessage(dateKey: string, message: StoredMessage) {
-  const map = readMap();
-  map[dateKey] = [...(map[dateKey] ?? []), message];
-  writeMap(map);
+export async function appendDayMessage(dateKey: string, message: StoredMessage) {
+  const supabase = createClient();
+  const { error } = await supabase.from("messages").insert({
+    date_key: dateKey,
+    role: message.role,
+    content: message.content,
+    time: message.time,
+  });
+
+  if (error) throw error;
 }
 
-export function getDatesWithHistory(): string[] {
-  return Object.keys(readMap()).filter((key) => readMap()[key].length > 0);
+export async function getDatesWithHistory(): Promise<string[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("messages").select("date_key");
+
+  if (error) throw error;
+  return [...new Set((data ?? []).map((row) => row.date_key as string))];
 }

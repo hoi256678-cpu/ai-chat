@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, getSession } from "@/lib/session";
 import {
   appendDayMessage,
   getDayMessages,
@@ -29,14 +28,11 @@ export default function ChatRoomPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setMessages(getDayMessages(todayKey()));
-    setReady(true);
-  }, [router]);
+    getDayMessages(todayKey()).then((msgs) => {
+      setMessages(msgs);
+      setReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,12 +50,13 @@ export default function ChatRoomPage() {
     };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
-    appendDayMessage(todayKey(), userMessage);
     setInput("");
     setError("");
     setLoading(true);
 
     try {
+      await appendDayMessage(todayKey(), userMessage);
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,7 +66,7 @@ export default function ChatRoomPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? "응답을 받지 못했습니다.");
+        throw new Error(data.error ?? "응답을 받지 못했어요.");
       }
       const assistantMessage: StoredMessage = {
         role: "assistant",
@@ -77,9 +74,9 @@ export default function ChatRoomPage() {
         time: formatTime(new Date()),
       };
       setMessages((prev) => [...prev, assistantMessage]);
-      appendDayMessage(todayKey(), assistantMessage);
+      await appendDayMessage(todayKey(), assistantMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : "오류가 발생했어요.");
     } finally {
       setLoading(false);
     }
@@ -120,7 +117,7 @@ export default function ChatRoomPage() {
           bottomRef={bottomRef}
         />
         {error && (
-          <p className="pt-2 text-center text-sm text-red-500" role="alert">
+          <p className="pt-2 text-center text-sm text-danger" role="alert">
             {error}
           </p>
         )}

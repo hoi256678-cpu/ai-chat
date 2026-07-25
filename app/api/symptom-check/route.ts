@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return Response.json(result);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+      error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요.";
     return Response.json({ error: message }, { status: 500 });
   }
 }
