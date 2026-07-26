@@ -13,8 +13,27 @@ export function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+// The "day" doesn't roll over at midnight — late-night chats before this
+// hour still belong to the previous calendar date, so a 1am conversation
+// continues yesterday's thread instead of starting a new empty one.
+const DAY_START_HOUR = 4;
+
+function effectiveToday() {
+  const now = new Date();
+  if (now.getHours() < DAY_START_HOUR) {
+    now.setDate(now.getDate() - 1);
+  }
+  return now;
+}
+
 export function todayKey() {
-  return formatDateKey(new Date());
+  return formatDateKey(effectiveToday());
+}
+
+export function tomorrowKey() {
+  const tomorrow = effectiveToday();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return formatDateKey(tomorrow);
 }
 
 export async function getDayMessages(dateKey: string): Promise<StoredMessage[]> {

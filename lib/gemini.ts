@@ -5,7 +5,7 @@ export type ChatMessage = {
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 
-export async function generateReply(messages: ChatMessage[]) {
+export async function generateReply(messages: ChatMessage[], context?: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -18,12 +18,17 @@ export async function generateReply(messages: ChatMessage[]) {
     parts: [{ text: message.content }],
   }));
 
+  const body: Record<string, unknown> = { contents };
+  if (context) {
+    body.systemInstruction = { parts: [{ text: context }] };
+  }
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify(body),
     }
   );
 

@@ -8,6 +8,7 @@ import {
   todayKey,
   type StoredMessage,
 } from "@/lib/chatHistory";
+import { buildEventContext, getUpcomingEvents, type CalendarEvent } from "@/lib/events";
 import { ChatMessages } from "@/components/ChatMessages";
 
 function formatTime(date: Date) {
@@ -25,6 +26,7 @@ export default function ChatRoomPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function ChatRoomPage() {
       setMessages(msgs);
       setReady(true);
     });
+    getUpcomingEvents().then(setUpcomingEvents);
   }, []);
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function ChatRoomPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map(({ role, content }) => ({ role, content })),
+          context: buildEventContext(upcomingEvents),
         }),
       });
       const data = await res.json();
