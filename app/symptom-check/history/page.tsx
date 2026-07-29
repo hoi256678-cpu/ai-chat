@@ -6,6 +6,7 @@ import {
   getSymptomChecks,
   type SymptomCheckRecord,
 } from "@/lib/symptomHistory";
+import { SymptomResultView } from "@/components/SymptomResultView";
 
 function formatDateTime(iso: string) {
   const date = new Date(iso);
@@ -120,7 +121,7 @@ export default function SymptomCheckHistoryPage() {
                 </button>
 
                 {expanded && (
-                  <div className="flex flex-col gap-3 border-t border-line px-5 py-4">
+                  <div className="flex flex-col gap-5 border-t border-line px-5 py-4">
                     <div>
                       <h2 className="mb-1 text-xs font-medium text-sub">
                         증상
@@ -145,83 +146,7 @@ export default function SymptomCheckHistoryPage() {
                       </div>
                     </div>
 
-                    {record.conditions.length > 0 && (
-                      <div>
-                        <h2 className="mb-1 text-xs font-medium text-sub">
-                          의심되는 증상/질환
-                        </h2>
-                        <ul className="flex flex-col gap-1">
-                          {record.conditions.map((condition) => (
-                            <li
-                              key={condition}
-                              className="text-sm font-semibold text-ink"
-                            >
-                              {condition}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {record.homeCare.length > 0 && (
-                      <div>
-                        <h2 className="mb-1 text-xs font-medium text-sub">
-                          집에서 할 수 있는 응급처치·관리법
-                        </h2>
-                        <ul className="flex flex-col gap-1">
-                          {record.homeCare.map((tip) => (
-                            <li key={tip} className="flex gap-2 text-sm text-ink">
-                              <span className="text-sub">•</span>
-                              <span>{tip}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {record.foods.length > 0 && (
-                      <div>
-                        <h2 className="mb-1 text-xs font-medium text-sub">
-                          이럴 때 먹으면 좋은 음식
-                        </h2>
-                        <ul className="flex flex-col gap-1">
-                          {record.foods.map((food) => (
-                            <li key={food} className="flex gap-2 text-sm text-ink">
-                              <span className="text-sub">•</span>
-                              <span>{food}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {record.departments.length > 0 && (
-                      <div>
-                        <h2 className="mb-2 text-xs font-medium text-sub">
-                          가보면 좋을 진료과
-                        </h2>
-                        <div className="flex flex-wrap gap-2">
-                          {record.departments.map((department) => (
-                            <span
-                              key={department}
-                              className="rounded-full bg-tint px-3 py-1.5 text-sm font-medium text-ink"
-                            >
-                              {department}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {record.summary && (
-                      <p className="text-sm leading-relaxed text-sub">
-                        {record.summary}
-                      </p>
-                    )}
-
-                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
-                      {record.disclaimer}
-                    </div>
+                    <SymptomResultView result={record} />
                   </div>
                 )}
               </div>
