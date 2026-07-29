@@ -4,13 +4,15 @@ import { generateReply as generateOllamaReply } from "@/lib/ollama";
 
 export type { ChatMessage };
 
-// Single entry point both API routes call. Defaults to Gemini (works in
-// prod/Vercel with no config); set AI_PROVIDER=ollama in .env.local to
-// route to a self-hosted open-source model instead. Ollama only listens
-// on localhost, so this switch is dev/test-only — Vercel can't reach it.
+// `local-ollama` branch: defaults to the local Ollama model (opposite of
+// `master`, which defaults to Gemini). Set AI_PROVIDER=gemini in
+// .env.local on this branch to fall back to Gemini if Ollama isn't
+// running. Ollama only listens on localhost, so this branch is only
+// meant to be run locally, never deployed — a Vercel build of this
+// branch would fail every AI call.
 export async function generateReply(messages: ChatMessage[], context?: string) {
-  if (process.env.AI_PROVIDER === "ollama") {
-    return generateOllamaReply(messages, context);
+  if (process.env.AI_PROVIDER === "gemini") {
+    return generateGeminiReply(messages, context);
   }
-  return generateGeminiReply(messages, context);
+  return generateOllamaReply(messages, context);
 }
