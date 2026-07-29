@@ -211,10 +211,9 @@ export default function SymptomCheckPage() {
         <span className="flex-1 px-1 font-semibold text-ink">증상 체크</span>
         <button
           onClick={() => router.push("/symptom-check/history")}
-          aria-label="지난 기록 보기"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
+          className="shrink-0 rounded-full px-3 py-2 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink"
         >
-          <HistoryIcon className="h-[19px] w-[19px]" />
+          지난 기록
         </button>
       </header>
 
@@ -547,34 +546,6 @@ function ChevronLeftIcon({ className }: { className?: string }) {
         d="M15 18l-6-6 6-6"
         stroke="currentColor"
         strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function HistoryIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M3 12a9 9 0 1 0 3-6.7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M3 4.5v3.8h3.8"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 8v4.5l3 2"
-        stroke="currentColor"
-        strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

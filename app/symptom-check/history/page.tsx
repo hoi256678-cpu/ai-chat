@@ -30,12 +30,6 @@ function formatRelativeDate(iso: string) {
   return date.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
 }
 
-function severityDotClass(severity: string) {
-  if (severity === "심함") return "bg-danger";
-  if (severity === "약함") return "bg-sub/40";
-  return "bg-accent";
-}
-
 export default function SymptomCheckHistoryPage() {
   const router = useRouter();
   const [records, setRecords] = useState<SymptomCheckRecord[]>([]);
@@ -111,10 +105,6 @@ export default function SymptomCheckHistoryPage() {
                   onClick={() => setExpandedId(expanded ? null : record.id)}
                   className="flex w-full items-center gap-3 px-4 py-4 text-left active:scale-[0.99]"
                 >
-                  <span
-                    aria-hidden
-                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDotClass(record.severity)}`}
-                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-1.5">
                       <span className="shrink-0 text-sm font-semibold text-ink">
