@@ -22,6 +22,8 @@ export async function saveSymptomCheck(
     departments: result.departments,
     summary: result.summary,
     disclaimer: result.disclaimer,
+    home_care: result.homeCare,
+    foods: result.foods,
   });
 
   if (error) throw error;
@@ -32,7 +34,7 @@ export async function getSymptomChecks(): Promise<SymptomCheckRecord[]> {
   const { data, error } = await supabase
     .from("symptom_checks")
     .select(
-      "id,body_part,symptoms,duration,severity,note,conditions,departments,summary,disclaimer,created_at"
+      "id,body_part,symptoms,duration,severity,note,conditions,departments,summary,disclaimer,home_care,foods,created_at"
     )
     .order("created_at", { ascending: false });
 
@@ -49,6 +51,8 @@ export async function getSymptomChecks(): Promise<SymptomCheckRecord[]> {
     departments: row.departments,
     summary: row.summary,
     disclaimer: row.disclaimer,
+    homeCare: row.home_care ?? [],
+    foods: row.foods ?? [],
     createdAt: row.created_at,
   }));
 }

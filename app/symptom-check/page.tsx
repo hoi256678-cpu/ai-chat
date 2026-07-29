@@ -445,6 +445,44 @@ export default function SymptomCheckPage() {
                 </ul>
               </div>
 
+              {result.homeCare.length > 0 && (
+                <div className="rounded-2xl border border-line bg-surface p-5">
+                  <h2 className="mb-2 text-xs font-medium text-sub">
+                    집에서 할 수 있는 응급처치·관리법
+                  </h2>
+                  <ul className="flex flex-col gap-1.5">
+                    {result.homeCare.map((tip) => (
+                      <li
+                        key={tip}
+                        className="flex gap-2 text-sm leading-relaxed text-ink"
+                      >
+                        <span className="text-sub">•</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.foods.length > 0 && (
+                <div className="rounded-2xl border border-line bg-surface p-5">
+                  <h2 className="mb-2 text-xs font-medium text-sub">
+                    이럴 때 먹으면 좋은 음식
+                  </h2>
+                  <ul className="flex flex-col gap-1.5">
+                    {result.foods.map((food) => (
+                      <li
+                        key={food}
+                        className="flex gap-2 text-sm leading-relaxed text-ink"
+                      >
+                        <span className="text-sub">•</span>
+                        <span>{food}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {result.departments.length > 0 && (
                 <div className="rounded-2xl border border-line bg-surface p-5">
                   <h2 className="mb-2 text-xs font-medium text-sub">

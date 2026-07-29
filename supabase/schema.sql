@@ -38,8 +38,15 @@ create table if not exists public.symptom_checks (
   departments text[] not null default '{}',
   summary text not null default '',
   disclaimer text not null default '',
+  home_care text[] not null default '{}',
+  foods text[] not null default '{}',
   created_at timestamptz not null default now()
 );
+
+-- Added later: home-care tips and food suggestions alongside the AI result.
+-- Run these two lines on existing projects where the table above already exists.
+alter table public.symptom_checks add column if not exists home_care text[] not null default '{}';
+alter table public.symptom_checks add column if not exists foods text[] not null default '{}';
 
 create index if not exists symptom_checks_user_created_idx
   on public.symptom_checks (user_id, created_at desc);

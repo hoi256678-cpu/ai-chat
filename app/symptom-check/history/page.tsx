@@ -163,6 +163,38 @@ export default function SymptomCheckHistoryPage() {
                       </div>
                     )}
 
+                    {record.homeCare.length > 0 && (
+                      <div>
+                        <h2 className="mb-1 text-xs font-medium text-sub">
+                          집에서 할 수 있는 응급처치·관리법
+                        </h2>
+                        <ul className="flex flex-col gap-1">
+                          {record.homeCare.map((tip) => (
+                            <li key={tip} className="flex gap-2 text-sm text-ink">
+                              <span className="text-sub">•</span>
+                              <span>{tip}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {record.foods.length > 0 && (
+                      <div>
+                        <h2 className="mb-1 text-xs font-medium text-sub">
+                          이럴 때 먹으면 좋은 음식
+                        </h2>
+                        <ul className="flex flex-col gap-1">
+                          {record.foods.map((food) => (
+                            <li key={food} className="flex gap-2 text-sm text-ink">
+                              <span className="text-sub">•</span>
+                              <span>{food}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {record.departments.length > 0 && (
                       <div>
                         <h2 className="mb-2 text-xs font-medium text-sub">

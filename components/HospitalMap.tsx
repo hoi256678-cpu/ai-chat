@@ -44,6 +44,12 @@ function loadKakaoMapsScript(appKey: string) {
   return scriptLoadingPromise;
 }
 
+function formatDistance(meters: number) {
+  return meters < 1000
+    ? `${meters}m`
+    : `${(meters / 1000).toFixed(1)}km`;
+}
+
 const USER_MARKER_SVG =
   "data:image/svg+xml;charset=UTF-8," +
   encodeURIComponent(
@@ -209,6 +215,33 @@ export function HospitalMap({ department }: { department: string }) {
             ? `반경 5km 이내 ${resultCount}곳을 찾았어요.`
             : "반경 5km 이내에서 결과를 찾지 못했어요."}
         </p>
+      )}
+
+      {status === "ready" && mapData && mapData.hospitals.length > 0 && (
+        <ul className="max-h-64 divide-y divide-line overflow-y-auto border-t border-line">
+          {[...mapData.hospitals]
+            .sort((a, b) => (a.distanceMeters ?? 0) - (b.distanceMeters ?? 0))
+            .map((hospital) => (
+              <li key={`${hospital.name}-${hospital.address}`} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink">
+                    {hospital.name}
+                  </span>
+                  {hospital.distanceMeters != null && (
+                    <span className="shrink-0 text-xs text-sub">
+                      {formatDistance(hospital.distanceMeters)}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-sub">
+                  {hospital.roadAddress || hospital.address}
+                </p>
+                {hospital.phone && (
+                  <p className="mt-0.5 text-xs text-sub">{hospital.phone}</p>
+                )}
+              </li>
+            ))}
+        </ul>
       )}
     </div>
   );
