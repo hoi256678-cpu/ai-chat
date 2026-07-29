@@ -1,4 +1,4 @@
-import { generateReply } from "@/lib/gemini";
+import { generateReply } from "@/lib/ai";
 import {
   buildSymptomPrompt,
   parseSymptomResult,

@@ -44,9 +44,11 @@ Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias
 
 `components/ChatMessages.tsx` is shared between the live chat room and the read-only history view. Its loading state renders a bouncing 3-dot "typing…" indicator (`.typing-dot` in `app/globals.css`) rather than literal loading text.
 
-### Gemini integration
+### AI provider (Gemini / local Ollama)
 
-`lib/gemini.ts` exports the single `generateReply(messages)` used by both API routes. It calls the Gemini REST `generateContent` endpoint directly via `fetch` (no SDK), mapping `assistant` → `model` role. Both `app/api/chat/route.ts` and `app/api/symptom-check/route.ts` are thin wrappers: validate input, call `generateReply`, map errors to a Korean-language JSON error response.
+Both API routes import `generateReply` from `lib/ai.ts`, not `lib/gemini.ts` directly. `lib/ai.ts` is a thin router: it calls `lib/ollama.ts` when `process.env.AI_PROVIDER === "ollama"`, otherwise `lib/gemini.ts` (the default, and the only option that works on Vercel). This exists so a local Ollama model (e.g. `qwen2.5:7b-instruct`, picked for Korean quality + the RTX 4070 SUPER on the dev machine) can be swapped in for free experimentation without touching either route — set `AI_PROVIDER=ollama` (plus optionally `OLLAMA_BASE_URL`/`OLLAMA_MODEL`) in `.env.local` only. Ollama listens on `localhost:11434`, which Vercel's serverless functions can never reach, so this switch is dev/test-only by construction, not a config oversight.
+
+`lib/gemini.ts` calls the Gemini REST `generateContent` endpoint directly via `fetch` (no SDK), mapping `assistant` → `model` role. `lib/ollama.ts` calls Ollama's own `/api/chat` endpoint, which already accepts `system`/`user`/`assistant` roles as-is (no remapping needed) and returns `message.content`. Both `app/api/chat/route.ts` and `app/api/symptom-check/route.ts` are thin wrappers: validate input, call `generateReply`, map errors to a Korean-language JSON error response.
 
 `lib/symptomCheck.ts` builds the Korean prompt that instructs Gemini to reply with strict JSON (`conditions`, `departments`, `summary`, `disclaimer`) and hedged, non-diagnostic language. `parseSymptomResult` strips markdown code fences and falls back to a safe default (empty arrays + raw text as `summary` + a fixed disclaimer) if JSON parsing fails — the API route never surfaces a parse error to the client.
 

@@ -1,4 +1,4 @@
-import { generateReply, type ChatMessage } from "@/lib/gemini";
+import { generateReply, type ChatMessage } from "@/lib/ai";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
