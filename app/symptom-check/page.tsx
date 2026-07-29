@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { SymptomResult } from "@/lib/symptomCheck";
 import { saveSymptomCheck } from "@/lib/symptomHistory";
 import { BodyDiagram } from "@/components/BodyDiagram";
+import { HospitalMap } from "@/components/HospitalMap";
 
 const QUICK_BODY_PARTS = ["피부", "전신", "기타"];
 
@@ -79,6 +80,7 @@ export default function SymptomCheckPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SymptomResult | null>(null);
+  const [activeDepartment, setActiveDepartment] = useState<string | null>(null);
 
   function selectBodyPart(part: string) {
     // Clicking the already-selected part again deselects it.
@@ -137,6 +139,7 @@ export default function SymptomCheckPage() {
     setNote("");
     setError("");
     setResult(null);
+    setActiveDepartment(null);
   }
 
   async function handleSubmit() {
@@ -449,14 +452,30 @@ export default function SymptomCheckPage() {
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {result.departments.map((department) => (
-                      <span
+                      <button
                         key={department}
-                        className="rounded-full bg-tint px-3 py-1.5 text-sm font-medium text-ink"
+                        onClick={() =>
+                          setActiveDepartment((prev) =>
+                            prev === department ? null : department
+                          )
+                        }
+                        className={
+                          activeDepartment === department
+                            ? "rounded-full border-2 border-accent bg-tint px-3 py-1.5 text-sm font-semibold text-ink transition"
+                            : "rounded-full border-2 border-transparent bg-tint px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/40"
+                        }
                       >
-                        {department}
-                      </span>
+                        {department} 주변 병원
+                      </button>
                     ))}
                   </div>
+
+                  {activeDepartment && (
+                    <HospitalMap
+                      key={activeDepartment}
+                      department={activeDepartment}
+                    />
+                  )}
                 </div>
               )}
 

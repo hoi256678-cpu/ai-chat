@@ -17,6 +17,8 @@ Requires `GEMINI_API_KEY` in `.env.local` (see `.env.local.example`) to use eith
 
 Requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local` for auth/chat history. Get them from the Supabase project's Settings → API page. Run `supabase/schema.sql` once in that project's SQL editor before first use, and turn off "Confirm email" under Authentication → Providers → Email (no email-confirmation flow is built).
 
+Requires two Kakao keys in `.env.local` for the nearby-hospitals feature on `/symptom-check`: `KAKAO_REST_API_KEY` (server-side, Kakao Local keyword search) and `NEXT_PUBLIC_KAKAO_MAP_APP_KEY` (client-side, Kakao Maps JS SDK). Both come from the same Kakao Developers app (developers.kakao.com → 내 애플리케이션 → 앱 키); register `http://localhost:3000` under 플랫폼 설정 → Web.
+
 ## Architecture
 
 Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias maps to repo root.
@@ -37,7 +39,7 @@ Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias
 `/` (login) and `/signup` (nickname + email/password) are separate pages sharing `translateAuthError` from `lib/authErrors.ts`. Signup signs the user out immediately after `auth.signUp()` and redirects to `/?signup=success` — it deliberately does not auto-login, so first login always goes through the login form. `/` → `/main` (hub) → either:
 - `/chat` — today's chat room, reads/appends via `lib/chatHistory.ts`, posts to `/api/chat`
 - `/chats` — calendar view of days with saved history → `/chats/[date]` — read-only view of a past day's messages
-- `/symptom-check` — 5-step wizard (body part via `components/BodyDiagram.tsx` SVG figure → symptoms → duration → severity → free-text note) → posts to `/api/symptom-check`, then best-effort saves via `lib/symptomHistory.ts` → `/symptom-check/history` — accordion list of past checks
+- `/symptom-check` — 5-step wizard (body part via `components/BodyDiagram.tsx` SVG figure → symptoms → duration → severity → free-text note) → posts to `/api/symptom-check`, then best-effort saves via `lib/symptomHistory.ts` → `/symptom-check/history` — accordion list of past checks. Each recommended department chip in the result toggles `components/HospitalMap.tsx`, which geolocates the browser, posts to `/api/hospitals`, and renders Kakao Maps JS markers for nearby matches.
 - `/settings` — edit the nickname stored in `auth.updateUser({ data: { nickname } })`; email is read-only
 
 `components/ChatMessages.tsx` is shared between the live chat room and the read-only history view. Its loading state renders a bouncing 3-dot "typing…" indicator (`.typing-dot` in `app/globals.css`) rather than literal loading text.
@@ -47,6 +49,12 @@ Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias
 `lib/gemini.ts` exports the single `generateReply(messages)` used by both API routes. It calls the Gemini REST `generateContent` endpoint directly via `fetch` (no SDK), mapping `assistant` → `model` role. Both `app/api/chat/route.ts` and `app/api/symptom-check/route.ts` are thin wrappers: validate input, call `generateReply`, map errors to a Korean-language JSON error response.
 
 `lib/symptomCheck.ts` builds the Korean prompt that instructs Gemini to reply with strict JSON (`conditions`, `departments`, `summary`, `disclaimer`) and hedged, non-diagnostic language. `parseSymptomResult` strips markdown code fences and falls back to a safe default (empty arrays + raw text as `summary` + a fixed disclaimer) if JSON parsing fails — the API route never surfaces a parse error to the client.
+
+### Nearby-hospitals (Kakao) integration
+
+`app/api/hospitals/route.ts` takes `{ lat, lng, department }` from the browser and calls `searchNearbyHospitals` in `lib/hospitals.ts`, which hits Kakao Local's keyword search (`dapi.kakao.com/v2/local/search/keyword.json`, `Authorization: KakaoAK {KAKAO_REST_API_KEY}` header) with `query=<department>`, `x`/`y` (lng/lat), `radius=5000`, `sort=distance`. Unlike the NAVER APIs this was migrated off of, Kakao's keyword search takes coordinates + radius natively, so there's no separate reverse-geocoding step — proximity bias comes straight from the `x`/`y`/`radius` params, and `distance` (meters) comes back per result for free.
+
+`components/HospitalMap.tsx` is the only client-side consumer: it calls the browser Geolocation API, posts to `/api/hospitals`, and lazy-loads the Kakao Maps JS SDK (`dapi.kakao.com/v2/maps/sdk.js?appkey=...&autoload=false`) via a manually-injected `<script>` tag rather than `next/script`, caching the load promise in a module-level variable so re-mounting (e.g. switching departments) doesn't re-inject it. `autoload=false` + `kakao.maps.load(callback)` defers SDK init until the callback fires, avoiding a race with the script's own onload. This uses the JS app key (`NEXT_PUBLIC_KAKAO_MAP_APP_KEY`), a separate key from the REST API key used server-side above — both come from the same Kakao Developers app.
 
 ### Styling
 
