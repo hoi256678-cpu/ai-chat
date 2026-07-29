@@ -234,9 +234,23 @@ export default function SymptomCheckPage() {
         <div className="mx-auto flex w-full max-w-md flex-col">
           {!result && (
             <>
-              <p className="font-display mb-6 text-center text-xs font-medium tracking-wide text-sub">
-                STEP {step + 1} / {TOTAL_STEPS}
-              </p>
+              <div className="mx-auto mb-6 flex w-full max-w-[220px] flex-col items-center gap-2">
+                <p className="font-display text-xs font-medium tracking-wide text-sub">
+                  STEP {step + 1} / {TOTAL_STEPS}
+                </p>
+                <div className="flex w-full gap-1.5">
+                  {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={
+                        i <= step
+                          ? "h-1.5 flex-1 rounded-full bg-accent transition-colors"
+                          : "h-1.5 flex-1 rounded-full bg-tint transition-colors"
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
 
               {step === 0 && (
                 <StepSection title="어디가 아프세요?" subtitle="그림에서 부위를 눌러 선택하세요.">
@@ -423,71 +437,65 @@ export default function SymptomCheckPage() {
           )}
 
           {result && (
-            <div className="flex flex-col gap-4">
-              <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
-                {result.disclaimer}
+            <div className="flex flex-col gap-5">
+              <div className="flex gap-3 rounded-2xl border border-blush-deep/30 bg-blush/15 px-4 py-3.5">
+                <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-blush-deep" />
+                <p className="text-xs leading-relaxed text-ink/80">
+                  {result.disclaimer}
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-line bg-surface p-5">
-                <h2 className="mb-1 text-xs font-medium text-sub">
-                  의심되는 증상/질환
-                </h2>
-                <ul className="flex flex-col gap-1">
-                  {result.conditions.length > 0 ? (
-                    result.conditions.map((condition) => (
-                      <li key={condition} className="text-base font-semibold text-ink">
-                        {condition}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="text-sm text-sub">{result.summary}</li>
-                  )}
-                </ul>
-              </div>
-
-              {result.homeCare.length > 0 && (
-                <div className="rounded-2xl border border-line bg-surface p-5">
-                  <h2 className="mb-2 text-xs font-medium text-sub">
-                    집에서 할 수 있는 응급처치·관리법
-                  </h2>
-                  <ul className="flex flex-col gap-1.5">
-                    {result.homeCare.map((tip) => (
+              <SectionCard
+                icon={<PulseIcon className="h-4 w-4" />}
+                title="의심되는 증상/질환"
+                emphasis
+              >
+                {result.conditions.length > 0 ? (
+                  <ul className="flex flex-col gap-2">
+                    {result.conditions.map((condition) => (
                       <li
-                        key={tip}
-                        className="flex gap-2 text-sm leading-relaxed text-ink"
+                        key={condition}
+                        className="text-base font-semibold leading-snug text-ink"
                       >
-                        <span className="text-sub">•</span>
-                        <span>{tip}</span>
+                        {condition}
                       </li>
                     ))}
                   </ul>
-                </div>
+                ) : (
+                  <p className="text-sm text-sub">{result.summary}</p>
+                )}
+
+                {result.conditions.length > 0 && result.summary && (
+                  <p className="mt-3 border-t border-line pt-3 text-sm leading-relaxed text-sub">
+                    {result.summary}
+                  </p>
+                )}
+              </SectionCard>
+
+              {result.homeCare.length > 0 && (
+                <SectionCard
+                  icon={<HomeIcon className="h-4 w-4" />}
+                  title="집에서 할 수 있는 응급처치·관리법"
+                >
+                  <BulletList items={result.homeCare} />
+                </SectionCard>
               )}
 
               {result.foods.length > 0 && (
-                <div className="rounded-2xl border border-line bg-surface p-5">
-                  <h2 className="mb-2 text-xs font-medium text-sub">
-                    이럴 때 먹으면 좋은 음식
-                  </h2>
-                  <ul className="flex flex-col gap-1.5">
-                    {result.foods.map((food) => (
-                      <li
-                        key={food}
-                        className="flex gap-2 text-sm leading-relaxed text-ink"
-                      >
-                        <span className="text-sub">•</span>
-                        <span>{food}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <SectionCard
+                  icon={<UtensilsIcon className="h-4 w-4" />}
+                  title="이럴 때 먹으면 좋은 음식"
+                >
+                  <BulletList items={result.foods} />
+                </SectionCard>
               )}
 
               {result.departments.length > 0 && (
-                <div className="rounded-2xl border border-line bg-surface p-5">
-                  <h2 className="mb-2 text-xs font-medium text-sub">
-                    가보면 좋을 진료과
-                  </h2>
+                <SectionCard
+                  icon={<PinIcon className="h-4 w-4" />}
+                  title="가보면 좋을 진료과"
+                  subtitle="눌러서 반경 5km 내 병원을 지도로 볼 수 있어요."
+                >
                   <div className="flex flex-wrap gap-2">
                     {result.departments.map((department) => (
                       <button
@@ -514,16 +522,10 @@ export default function SymptomCheckPage() {
                       department={activeDepartment}
                     />
                   )}
-                </div>
+                </SectionCard>
               )}
 
-              {result.conditions.length > 0 && result.summary && (
-                <p className="px-1 text-sm leading-relaxed text-sub">
-                  {result.summary}
-                </p>
-              )}
-
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-1 flex items-center gap-3">
                 <button
                   onClick={reset}
                   className="flex-1 rounded-full border border-line px-4 py-3 text-sm font-semibold text-ink transition hover:bg-tint"
@@ -564,6 +566,144 @@ function StepSection({
       )}
       <div className="mt-6">{children}</div>
     </div>
+  );
+}
+
+function SectionCard({
+  icon,
+  title,
+  subtitle,
+  emphasis,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  emphasis?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={
+        emphasis
+          ? "rounded-2xl border border-accent/25 bg-surface p-5"
+          : "rounded-2xl border border-line bg-surface p-5"
+      }
+    >
+      <div className="mb-3 flex items-center gap-2.5">
+        <span
+          className={
+            emphasis
+              ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-white"
+              : "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-tint text-accent"
+          }
+        >
+          {icon}
+        </span>
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+      </div>
+      {subtitle && <p className="mb-3 text-xs text-sub">{subtitle}</p>}
+      {children}
+    </div>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {items.map((item) => (
+        <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-ink">
+          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/50" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function InfoIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 11v5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="7.75" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PulseIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M3 12h4l2-7 4 14 2-7h6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M4 11.5 12 4l8 7.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 10v9h12v-9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function UtensilsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M7 3v7a2 2 0 0 0 2 2v9M7 3v7M9 3v7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17 3c-1.5 0-2.5 2-2.5 5s1 5 2.5 5v8"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PinIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="9.5" r="2.25" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
   );
 }
 
