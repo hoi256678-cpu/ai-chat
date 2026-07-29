@@ -64,6 +64,11 @@ export function HospitalMap({ department }: { department: string }) {
     GEOLOCATION_SUPPORTED ? "" : "이 브라우저에서는 위치 정보를 사용할 수 없어요."
   );
   const [resultCount, setResultCount] = useState<number | null>(null);
+  const [mapData, setMapData] = useState<{
+    lat: number;
+    lng: number;
+    hospitals: Hospital[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,8 +79,8 @@ export function HospitalMap({ department }: { department: string }) {
 
     // Kick the SDK download off immediately instead of waiting on
     // geolocation first — the script doesn't need the user's coordinates,
-    // only renderMap() does, so this overlaps two slow operations instead
-    // of paying for them back-to-back.
+    // only the map-rendering effect below does, so this overlaps two slow
+    // operations instead of paying for them back-to-back.
     const scriptPromise = loadKakaoMapsScript(
       process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY ?? ""
     );
@@ -103,8 +108,15 @@ export function HospitalMap({ department }: { department: string }) {
           if (cancelled) return;
 
           const hospitals: Hospital[] = data.hospitals ?? [];
-          renderMap(latitude, longitude, hospitals);
           setResultCount(hospitals.length);
+          // Defer map creation to the effect below, which only runs once
+          // this "ready" status has actually reached the DOM and the
+          // container div has swapped out of `hidden`. Kakao's Map()
+          // reads the container's layout size at construction time, so
+          // building it one tick early (while the div is still
+          // display:none) leaves the map visually broken until the user
+          // interacts with it.
+          setMapData({ lat: latitude, lng: longitude, hospitals });
           setStatus("ready");
         } catch (err) {
           if (cancelled) return;
@@ -124,47 +136,50 @@ export function HospitalMap({ department }: { department: string }) {
       { maximumAge: 5 * 60 * 1000, timeout: 10000 }
     );
 
-    function renderMap(lat: number, lng: number, hospitals: Hospital[]) {
-      const { kakao } = window;
-      if (!kakao?.maps || !mapContainerRef.current) return;
-
-      const center = new kakao.maps.LatLng(lat, lng);
-      const map = new kakao.maps.Map(mapContainerRef.current, {
-        center,
-        level: 5,
-      });
-
-      new kakao.maps.Marker({
-        position: center,
-        map,
-        image: new kakao.maps.MarkerImage(
-          USER_MARKER_SVG,
-          new kakao.maps.Size(16, 16)
-        ),
-      });
-
-      hospitals.forEach((hospital) => {
-        const position = new kakao.maps.LatLng(hospital.lat, hospital.lng);
-        const marker = new kakao.maps.Marker({ position, map });
-        const infoWindow = new kakao.maps.InfoWindow({
-          content: `
-            <div style="padding:10px 12px;min-width:160px;font-size:13px;line-height:1.5;">
-              <strong>${hospital.name}</strong><br/>
-              <span style="color:#666;">${hospital.roadAddress || hospital.address}</span>
-              ${hospital.phone ? `<br/><span style="color:#666;">${hospital.phone}</span>` : ""}
-            </div>
-          `,
-        });
-        kakao.maps.event.addListener(marker, "click", () => {
-          infoWindow.open(map, marker);
-        });
-      });
-    }
-
     return () => {
       cancelled = true;
     };
   }, [department]);
+
+  useEffect(() => {
+    if (!mapData || !mapContainerRef.current) return;
+
+    const { kakao } = window;
+    if (!kakao?.maps) return;
+
+    const { lat, lng, hospitals } = mapData;
+    const center = new kakao.maps.LatLng(lat, lng);
+    const map = new kakao.maps.Map(mapContainerRef.current, {
+      center,
+      level: 5,
+    });
+
+    new kakao.maps.Marker({
+      position: center,
+      map,
+      image: new kakao.maps.MarkerImage(
+        USER_MARKER_SVG,
+        new kakao.maps.Size(16, 16)
+      ),
+    });
+
+    hospitals.forEach((hospital) => {
+      const position = new kakao.maps.LatLng(hospital.lat, hospital.lng);
+      const marker = new kakao.maps.Marker({ position, map });
+      const infoWindow = new kakao.maps.InfoWindow({
+        content: `
+          <div style="padding:10px 12px;min-width:160px;font-size:13px;line-height:1.5;">
+            <strong>${hospital.name}</strong><br/>
+            <span style="color:#666;">${hospital.roadAddress || hospital.address}</span>
+            ${hospital.phone ? `<br/><span style="color:#666;">${hospital.phone}</span>` : ""}
+          </div>
+        `,
+      });
+      kakao.maps.event.addListener(marker, "click", () => {
+        infoWindow.open(map, marker);
+      });
+    });
+  }, [mapData]);
 
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-surface">
