@@ -72,6 +72,14 @@ export function HospitalMap({ department }: { department: string }) {
       return;
     }
 
+    // Kick the SDK download off immediately instead of waiting on
+    // geolocation first — the script doesn't need the user's coordinates,
+    // only renderMap() does, so this overlaps two slow operations instead
+    // of paying for them back-to-back.
+    const scriptPromise = loadKakaoMapsScript(
+      process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY ?? ""
+    );
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         if (cancelled) return;
@@ -80,9 +88,7 @@ export function HospitalMap({ department }: { department: string }) {
         try {
           const { latitude, longitude } = position.coords;
           const [, hospitalsRes] = await Promise.all([
-            loadKakaoMapsScript(
-              process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY ?? ""
-            ),
+            scriptPromise,
             fetch("/api/hospitals", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -106,11 +112,16 @@ export function HospitalMap({ department }: { department: string }) {
           setStatus("error");
         }
       },
-      () => {
+      (positionError) => {
         if (cancelled) return;
         setStatus("error");
-        setError("위치 권한이 필요해요. 브라우저 설정에서 위치 접근을 허용해주세요.");
-      }
+        setError(
+          positionError.code === positionError.TIMEOUT
+            ? "위치를 확인하는 데 시간이 너무 오래 걸려요. 다시 시도해주세요."
+            : "위치 권한이 필요해요. 브라우저 설정에서 위치 접근을 허용해주세요."
+        );
+      },
+      { maximumAge: 5 * 60 * 1000, timeout: 10000 }
     );
 
     function renderMap(lat: number, lng: number, hospitals: Hospital[]) {
