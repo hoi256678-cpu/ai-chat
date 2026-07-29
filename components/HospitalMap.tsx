@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Hospital } from "@/lib/hospitals";
 
+type KakaoMap = {
+  setCenter: (position: unknown) => void;
+  panTo: (position: unknown) => void;
+};
+
 declare global {
   interface Window {
     kakao?: {
@@ -15,10 +20,14 @@ declare global {
           size: unknown,
           options?: Record<string, unknown>
         ) => unknown;
-        Map: new (container: HTMLElement, options: Record<string, unknown>) => unknown;
+        Map: new (container: HTMLElement, options: Record<string, unknown>) => KakaoMap;
         Marker: new (options: Record<string, unknown>) => unknown;
         InfoWindow: new (options: Record<string, unknown>) => {
           open: (map: unknown, marker: unknown) => void;
+          close: () => void;
+        };
+        CustomOverlay: new (options: Record<string, unknown>) => {
+          setMap: (map: unknown) => void;
         };
         event: { addListener: (target: unknown, name: string, handler: () => void) => void };
       };
@@ -61,8 +70,24 @@ type Status = "locating" | "loading" | "ready" | "error";
 const GEOLOCATION_SUPPORTED =
   typeof navigator !== "undefined" && "geolocation" in navigator;
 
+function hospitalKey(hospital: Hospital) {
+  return `${hospital.name}-${hospital.address}`;
+}
+
 export function HospitalMap({ department }: { department: string }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const markerEntriesRef = useRef<
+    Map<
+      string,
+      {
+        position: unknown;
+        marker: unknown;
+        infoWindow: { open: (map: unknown, marker: unknown) => void; close: () => void };
+      }
+    >
+  >(new Map());
+  const openInfoWindowRef = useRef<{ close: () => void } | null>(null);
   const [status, setStatus] = useState<Status>(
     GEOLOCATION_SUPPORTED ? "locating" : "error"
   );
@@ -159,6 +184,7 @@ export function HospitalMap({ department }: { department: string }) {
       center,
       level: 5,
     });
+    mapInstanceRef.current = map;
 
     new kakao.maps.Marker({
       position: center,
@@ -168,6 +194,23 @@ export function HospitalMap({ department }: { department: string }) {
         new kakao.maps.Size(16, 16)
       ),
     });
+
+    new kakao.maps.CustomOverlay({
+      position: center,
+      map,
+      yAnchor: 2.2,
+      content:
+        '<div style="padding:2px 8px;border-radius:9999px;background:#3b82f6;color:white;font-size:11px;font-weight:600;white-space:nowrap;">내 위치</div>',
+    });
+
+    const entries = new Map<
+      string,
+      {
+        position: unknown;
+        marker: unknown;
+        infoWindow: { open: (map: unknown, marker: unknown) => void; close: () => void };
+      }
+    >();
 
     hospitals.forEach((hospital) => {
       const position = new kakao.maps.LatLng(hospital.lat, hospital.lng);
@@ -182,10 +225,26 @@ export function HospitalMap({ department }: { department: string }) {
         `,
       });
       kakao.maps.event.addListener(marker, "click", () => {
+        openInfoWindowRef.current?.close();
         infoWindow.open(map, marker);
+        openInfoWindowRef.current = infoWindow;
       });
+      entries.set(hospitalKey(hospital), { position, marker, infoWindow });
     });
+
+    markerEntriesRef.current = entries;
   }, [mapData]);
+
+  function focusHospital(hospital: Hospital) {
+    const map = mapInstanceRef.current;
+    const entry = markerEntriesRef.current.get(hospitalKey(hospital));
+    if (!map || !entry) return;
+
+    map.panTo(entry.position);
+    openInfoWindowRef.current?.close();
+    entry.infoWindow.open(map, entry.marker);
+    openInfoWindowRef.current = entry.infoWindow;
+  }
 
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-surface">
@@ -222,23 +281,28 @@ export function HospitalMap({ department }: { department: string }) {
           {[...mapData.hospitals]
             .sort((a, b) => (a.distanceMeters ?? 0) - (b.distanceMeters ?? 0))
             .map((hospital) => (
-              <li key={`${hospital.name}-${hospital.address}`} className="px-4 py-3">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink">
-                    {hospital.name}
-                  </span>
-                  {hospital.distanceMeters != null && (
-                    <span className="shrink-0 text-xs text-sub">
-                      {formatDistance(hospital.distanceMeters)}
+              <li key={hospitalKey(hospital)}>
+                <button
+                  onClick={() => focusHospital(hospital)}
+                  className="w-full px-4 py-3 text-left transition hover:bg-tint"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-semibold text-ink">
+                      {hospital.name}
                     </span>
+                    {hospital.distanceMeters != null && (
+                      <span className="shrink-0 text-xs text-sub">
+                        {formatDistance(hospital.distanceMeters)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-sub">
+                    {hospital.roadAddress || hospital.address}
+                  </p>
+                  {hospital.phone && (
+                    <p className="mt-0.5 text-xs text-sub">{hospital.phone}</p>
                   )}
-                </div>
-                <p className="mt-0.5 text-xs text-sub">
-                  {hospital.roadAddress || hospital.address}
-                </p>
-                {hospital.phone && (
-                  <p className="mt-0.5 text-xs text-sub">{hospital.phone}</p>
-                )}
+                </button>
               </li>
             ))}
         </ul>
