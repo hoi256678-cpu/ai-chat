@@ -8,16 +8,32 @@ import {
 } from "@/lib/symptomHistory";
 import { SymptomResultView } from "@/components/SymptomResultView";
 
-function formatDateTime(iso: string) {
+function formatRelativeDate(iso: string) {
   const date = new Date(iso);
-  return date.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const now = new Date();
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round(
+    (startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays === 0) {
+    const time = date.toLocaleString("ko-KR", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `오늘 ${time}`;
+  }
+  if (diffDays === 1) return "어제";
+  if (diffDays > 1 && diffDays < 7) return `${diffDays}일 전`;
+  return date.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+}
+
+function severityDotClass(severity: string) {
+  if (severity === "심함") return "bg-danger";
+  if (severity === "약함") return "bg-sub/40";
+  return "bg-accent";
 }
 
 export default function SymptomCheckHistoryPage() {
@@ -42,13 +58,13 @@ export default function SymptomCheckHistoryPage() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-bg">
       <header
-        className="flex shrink-0 items-center gap-3 border-b border-line px-3 py-3"
+        className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-2"
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <button
           onClick={() => router.push("/symptom-check")}
           aria-label="증상 체크로 돌아가기"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path
@@ -60,7 +76,7 @@ export default function SymptomCheckHistoryPage() {
             />
           </svg>
         </button>
-        <span className="font-semibold text-ink">지난 증상체크 기록</span>
+        <span className="px-1 font-semibold text-ink">지난 증상체크 기록</span>
       </header>
 
       <div
@@ -85,19 +101,32 @@ export default function SymptomCheckHistoryPage() {
             return (
               <div
                 key={record.id}
-                className="rounded-2xl border border-line bg-surface"
+                className={
+                  expanded
+                    ? "rounded-2xl border border-accent/25 bg-surface transition"
+                    : "rounded-2xl border border-line bg-surface transition"
+                }
               >
                 <button
                   onClick={() => setExpandedId(expanded ? null : record.id)}
-                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+                  className="flex w-full items-center gap-3 px-4 py-4 text-left active:scale-[0.99]"
                 >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-semibold text-ink">
-                      {record.bodyPart}
-                    </span>
-                    <span className="text-xs text-sub">
-                      {formatDateTime(record.createdAt)}
-                    </span>
+                  <span
+                    aria-hidden
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${severityDotClass(record.severity)}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="shrink-0 text-sm font-semibold text-ink">
+                        {record.bodyPart}
+                      </span>
+                      <span className="shrink-0 text-xs text-sub">
+                        {formatRelativeDate(record.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-sub">
+                      {record.conditions[0] ?? record.symptoms.join(", ")}
+                    </p>
                   </div>
                   <svg
                     width="16"
