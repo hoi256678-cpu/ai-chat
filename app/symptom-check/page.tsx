@@ -503,7 +503,7 @@ export default function SymptomCheckPage() {
                             : "rounded-full border-2 border-transparent bg-tint px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/40"
                         }
                       >
-                        {department} 주변 병원
+                        주변 {department} 병원
                       </button>
                     ))}
                   </div>
