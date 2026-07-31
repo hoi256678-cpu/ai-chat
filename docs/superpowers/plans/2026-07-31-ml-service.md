@@ -610,6 +610,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'serve'`
 ```python
 import io
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import torch
@@ -630,12 +631,9 @@ TRANSFORM = transforms.Compose(
     ]
 )
 
-app = FastAPI()
-
 _state: dict[str, object] = {"model": None, "classes": None}
 
 
-@app.on_event("startup")
 def load_model() -> None:
     classes = json.loads(CLASSES_PATH.read_text(encoding="utf-8"))
     model = build_model(num_classes=len(classes))
@@ -643,6 +641,15 @@ def load_model() -> None:
     model.eval()
     _state["model"] = model
     _state["classes"] = classes
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_model()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/predict")
