@@ -3,15 +3,10 @@ import shutil
 import sys
 from pathlib import Path
 
-# AI Hub "피부질환 진단 의료 이미지" 다운로드본을 실제로 열어보고, 아래 이름이
-# 실제 폴더명과 다르면 여기를 맞춰서 고칠 것 (Task 5에서 확인).
-TARGET_CLASSES = [
-    "아토피피부염",
-    "여드름",
-    "두드러기",
-    "건선",
-    "대상포진",
-]
+# HAM10000 dx 코드 중 시각적으로 뚜렷이 구분되는 4종만 사용 (정확도 90% 목표,
+# nv는 전체 데이터의 ~67%를 차지해 제외). organize_ham10000.py가 먼저 이 이름의
+# 폴더로 원본을 정리해줘야 prepare_data.py가 읽을 수 있음.
+TARGET_CLASSES = ["vasc", "df", "bcc", "akiec"]
 
 VAL_RATIO = 0.2
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
