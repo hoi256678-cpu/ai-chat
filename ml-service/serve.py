@@ -45,7 +45,7 @@ async def predict(file: UploadFile = File(...)):
     raw = await file.read()
     try:
         image = Image.open(io.BytesIO(raw)).convert("RGB")
-    except UnidentifiedImageError:
+    except (UnidentifiedImageError, OSError):
         raise HTTPException(status_code=400, detail="이미지 파일을 읽을 수 없습니다.")
 
     tensor = TRANSFORM(image).unsqueeze(0)
