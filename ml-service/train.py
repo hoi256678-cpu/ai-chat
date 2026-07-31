@@ -26,6 +26,11 @@ def train(
     train_dataset = ImageFolder(data_dir / "train", transform=EVAL_TRANSFORM)
     val_dataset = ImageFolder(data_dir / "val", transform=EVAL_TRANSFORM)
 
+    if train_dataset.classes != val_dataset.classes:
+        raise ValueError(
+            f"train/val class mismatch: {train_dataset.classes} vs {val_dataset.classes}"
+        )
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
