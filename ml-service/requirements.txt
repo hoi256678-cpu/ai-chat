@@ -1,3 +1,7 @@
+# GPU (CUDA) support: install torch/torchvision FIRST with
+# `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124`
+# before running `pip install -r requirements.txt` — otherwise pip silently
+# resolves the CPU-only wheels below and training will be extremely slow.
 torch>=2.2
 torchvision>=0.17
 fastapi>=0.110
