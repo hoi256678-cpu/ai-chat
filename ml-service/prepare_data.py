@@ -26,6 +26,9 @@ def prepare_data(
 ) -> list[str]:
     rng = random.Random(seed)
 
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
     for split in ("train", "val"):
         (out_dir / split).mkdir(parents=True, exist_ok=True)
 

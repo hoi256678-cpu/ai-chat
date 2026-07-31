@@ -44,6 +44,18 @@ def test_prepare_data_is_deterministic_with_same_seed(tmp_path):
     assert names_a == names_b
 
 
+def test_prepare_data_is_idempotent_when_classes_change(tmp_path):
+    raw_dir = tmp_path / "raw"
+    out_dir = tmp_path / "prepared"
+    make_raw_dataset(raw_dir, {"A": 10, "B": 10, "C": 10})
+
+    prepare_data(raw_dir, out_dir, classes=["A", "B"], val_ratio=0.2)
+    prepare_data(raw_dir, out_dir, classes=["A", "C"], val_ratio=0.2)
+
+    assert (out_dir / "train" / "B").exists() is False
+    assert (out_dir / "train" / "C").exists() is True
+
+
 def test_prepare_data_raises_for_missing_class_folder(tmp_path):
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
