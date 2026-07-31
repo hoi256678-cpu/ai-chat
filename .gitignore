@@ -45,3 +45,12 @@ next-env.d.ts
 
 # git worktrees (superpowers subagent-driven-development)
 .worktrees/
+
+# ml-service (python)
+ml-service/.venv/
+ml-service/data/
+ml-service/*.pth
+ml-service/classes.json
+ml-service/__pycache__/
+ml-service/**/__pycache__/
+.pytest_cache/
