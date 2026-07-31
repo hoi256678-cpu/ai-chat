@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 
 import numpy as np
+import torch
 from PIL import Image
 
+from model import build_model
 from train import train
 
 
@@ -36,3 +38,17 @@ def test_train_produces_model_and_classes_file(tmp_path):
     assert model_output.exists()
     saved_classes = json.loads(classes_output.read_text(encoding="utf-8"))
     assert sorted(saved_classes) == sorted(classes)
+
+    # Verify the saved artifact is actually a valid, matching state_dict —
+    # not just that some file happens to exist at model_output. Task 4
+    # (serve.py) will load this exact file at runtime via build_model(...)
+    # .load_state_dict(...), so reconstruct that exact path here.
+    loaded_model = build_model(num_classes=len(saved_classes))
+    state_dict = torch.load(model_output, map_location="cpu")
+    loaded_model.load_state_dict(state_dict)  # raises RuntimeError on mismatch
+
+    loaded_model.eval()
+    with torch.no_grad():
+        dummy_input = torch.randn(1, 3, 224, 224)
+        output = loaded_model(dummy_input)
+    assert output.shape == (1, len(saved_classes))
