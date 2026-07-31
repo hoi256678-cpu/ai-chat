@@ -4,22 +4,13 @@ from pathlib import Path
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from torchvision import transforms
 from torchvision.datasets import ImageFolder
 
-from model import build_model
+from model import EVAL_TRANSFORM, build_model
 
 DEFAULT_DATA_DIR = Path(__file__).parent / "data"
 DEFAULT_MODEL_OUTPUT = Path(__file__).parent / "skin_model.pth"
 DEFAULT_CLASSES_OUTPUT = Path(__file__).parent / "classes.json"
-
-TRANSFORM = transforms.Compose(
-    [
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
-)
 
 
 def train(
@@ -32,8 +23,8 @@ def train(
 ) -> tuple[nn.Module, list[str]]:
     resolved_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_dataset = ImageFolder(data_dir / "train", transform=TRANSFORM)
-    val_dataset = ImageFolder(data_dir / "val", transform=TRANSFORM)
+    train_dataset = ImageFolder(data_dir / "train", transform=EVAL_TRANSFORM)
+    val_dataset = ImageFolder(data_dir / "val", transform=EVAL_TRANSFORM)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)

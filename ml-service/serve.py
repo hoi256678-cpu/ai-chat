@@ -6,20 +6,11 @@ from pathlib import Path
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
-from torchvision import transforms
 
-from model import build_model
+from model import EVAL_TRANSFORM, build_model
 
 MODEL_PATH = Path(__file__).parent / "skin_model.pth"
 CLASSES_PATH = Path(__file__).parent / "classes.json"
-
-TRANSFORM = transforms.Compose(
-    [
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
-)
 
 _state: dict[str, object] = {"model": None, "classes": None}
 
@@ -48,7 +39,7 @@ async def predict(file: UploadFile = File(...)):
     except (UnidentifiedImageError, OSError):
         raise HTTPException(status_code=400, detail="이미지 파일을 읽을 수 없습니다.")
 
-    tensor = TRANSFORM(image).unsqueeze(0)
+    tensor = EVAL_TRANSFORM(image).unsqueeze(0)
     model = _state["model"]
     classes = _state["classes"]
     with torch.no_grad():
