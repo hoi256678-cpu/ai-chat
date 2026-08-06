@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       ? describeClassification(classification)
       : undefined;
     const prompt = buildSymptomPrompt(input, classificationNote);
-    // classification 성공 여부로 라우팅 — ml-service가 꺼져있으면 이 브랜치 기본 경로(Ollama)로 폴백
+    // classification 성공 여부로 라우팅 — ml-service가 꺼져있으면 lib/ai.ts의 기본 경로(Gemini)로 폴백
     const raw = classification
       ? await generateGeminiReply([{ role: "user", content: prompt }])
       : await generateReply([{ role: "user", content: prompt }]);
