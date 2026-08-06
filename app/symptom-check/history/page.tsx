@@ -33,6 +33,37 @@ function findClosestCard(
   return closestCard ? { index: closestIndex, card: closestCard } : null;
 }
 
+// Animates the track's scrollLeft to an exact target ourselves (ease-out
+// cubic, ~280ms) instead of trusting `scrollTo({behavior:"smooth"})` or
+// CSS `scroll-behavior: smooth` — both were inconsistent in testing here
+// (sometimes resolving instantly instead of animating, likely CSS
+// scroll-snap correcting the position before the browser's own smooth-
+// scroll had a frame to run). scroll-snap-type is turned off for the
+// duration so its snap-correction can't fight our per-frame writes, then
+// restored once we land exactly on the target.
+function animateScrollTo(track: HTMLDivElement, target: number, duration = 280) {
+  const start = track.scrollLeft;
+  const distance = target - start;
+  if (Math.abs(distance) < 1) return;
+
+  const previousSnapType = track.style.scrollSnapType;
+  track.style.scrollSnapType = "none";
+  const startTime = performance.now();
+
+  function step(now: number) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    track.scrollLeft = start + distance * eased;
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      track.style.scrollSnapType = previousSnapType;
+    }
+  }
+  requestAnimationFrame(step);
+}
+
 function formatRelativeDate(iso: string) {
   const date = new Date(iso);
   const now = new Date();
@@ -132,7 +163,7 @@ export default function SymptomCheckHistoryPage() {
           closest.card.offsetLeft +
           closest.card.offsetWidth / 2 -
           track.clientWidth / 2;
-        track.scrollTo({ left: targetLeft, behavior: "smooth" });
+        animateScrollTo(track, targetLeft);
         setActiveIndex(closest.index);
       }
     }
@@ -229,8 +260,8 @@ export default function SymptomCheckHistoryPage() {
               onMouseDown={handleMouseDown}
               className={
                 isDragging
-                  ? "no-scrollbar flex snap-x snap-mandatory overflow-x-auto select-none [cursor:grabbing]"
-                  : "no-scrollbar flex snap-x snap-mandatory overflow-x-auto [cursor:grab]"
+                  ? "no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth select-none [cursor:grabbing]"
+                  : "no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth [cursor:grab]"
               }
             >
               {/* Leading spacer — NOT container padding, deliberately. Padding
