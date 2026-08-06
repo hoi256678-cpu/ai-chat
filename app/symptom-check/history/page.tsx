@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   getSymptomChecks,
@@ -41,6 +41,63 @@ export default function SymptomCheckHistoryPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Mouse-drag panning for the card track. Touch/trackpad swipe already
+  // works via native overflow-x scrolling (no mousedown/mousemove involved),
+  // so this is purely additive for desktop mouse users.
+  const dragRef = useRef<{
+    startX: number;
+    startScrollLeft: number;
+    moved: boolean;
+  } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleMouseDown(event: ReactMouseEvent<HTMLDivElement>) {
+    const track = trackRef.current;
+    if (!track) return;
+    dragRef.current = {
+      startX: event.clientX,
+      startScrollLeft: track.scrollLeft,
+      moved: false,
+    };
+    setIsDragging(true);
+  }
+
+  // Listens on window (not just the track) so a fast drag that outruns the
+  // cursor past the track's edge still keeps tracking, and mouseup always
+  // gets caught even if the button is released outside the track.
+  useEffect(() => {
+    function handleMouseMove(event: MouseEvent) {
+      const track = trackRef.current;
+      const drag = dragRef.current;
+      if (!track || !drag) return;
+      const delta = event.clientX - drag.startX;
+      if (Math.abs(delta) > 3) drag.moved = true;
+      track.scrollLeft = drag.startScrollLeft - delta;
+    }
+
+    function handleMouseUp() {
+      setIsDragging(false);
+      // Deliberately not clearing dragRef here — the card <button>'s click
+      // event fires right after this mouseup, in the same event-loop turn,
+      // and handleCardClick needs to still see this drag's `moved` flag to
+      // know whether to suppress that click. The next mousedown replaces it.
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  // A card's onClick fires right after mouseup — skip it when the mouse
+  // actually dragged the track, so panning past a card doesn't also open it.
+  function handleCardClick(record: SymptomCheckRecord) {
+    if (dragRef.current?.moved) return;
+    setSelectedRecord(record);
+  }
 
   // Tracks which card sits closest to the track's horizontal center, so the
   // "front" card (like the one centered in a phone's app-switcher deck) can
@@ -123,7 +180,12 @@ export default function SymptomCheckHistoryPage() {
             <div
               ref={trackRef}
               onScroll={handleTrackScroll}
-              className="flex snap-x snap-mandatory overflow-x-auto"
+              onMouseDown={handleMouseDown}
+              className={
+                isDragging
+                  ? "no-scrollbar flex snap-none overflow-x-auto select-none [cursor:grabbing]"
+                  : "no-scrollbar flex snap-x snap-mandatory overflow-x-auto [cursor:grab]"
+              }
               style={{ paddingLeft: "6%", paddingRight: "6%" }}
             >
               {records.map((record, index) => {
@@ -137,11 +199,11 @@ export default function SymptomCheckHistoryPage() {
                       ref={(el) => {
                         cardRefs.current[index] = el;
                       }}
-                      onClick={() => setSelectedRecord(record)}
+                      onClick={() => handleCardClick(record)}
                       className={
                         active
-                          ? "flex h-72 w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300 sm:h-80"
-                          : "flex h-72 w-full shrink-0 scale-90 flex-col rounded-[2rem] border border-line bg-surface p-7 text-left opacity-40 shadow-none transition-all duration-300 sm:h-80"
+                          ? "flex h-[26rem] w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300 sm:h-[30rem]"
+                          : "flex h-[26rem] w-full shrink-0 scale-90 flex-col rounded-[2rem] border border-line bg-surface p-7 text-left opacity-40 shadow-none transition-all duration-300 sm:h-[30rem]"
                       }
                     >
                       <div className="flex items-center justify-between">
@@ -152,6 +214,26 @@ export default function SymptomCheckHistoryPage() {
                           {formatRelativeDate(record.createdAt)}
                         </span>
                       </div>
+
+                      {record.photo && (
+                        <div className="relative mt-4 h-32 w-full shrink-0 overflow-hidden rounded-2xl bg-tint sm:h-40">
+                          {/* Blurred preview only — the clear photo is one tap
+                              away in the detail sheet, not exposed in the
+                              swipeable deck. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={record.photo}
+                            alt=""
+                            aria-hidden
+                            draggable={false}
+                            className="h-full w-full scale-110 object-cover blur-xl"
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white/90 drop-shadow">
+                            눌러서 사진 보기
+                          </span>
+                        </div>
+                      )}
+
                       <p className="mt-4 line-clamp-4 flex-1 text-base leading-relaxed text-ink sm:text-lg">
                         {record.conditions[0] ?? record.symptoms.join(", ")}
                       </p>
@@ -213,6 +295,20 @@ export default function SymptomCheckHistoryPage() {
 
             <div className="flex-1 overflow-y-auto px-5 pb-2">
               <div className="flex flex-col gap-5">
+                {selectedRecord.photo && (
+                  <div>
+                    <h2 className="mb-1 text-xs font-medium text-sub">
+                      첨부한 사진
+                    </h2>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedRecord.photo}
+                      alt="증상체크 당시 첨부한 사진"
+                      className="w-full rounded-2xl object-cover"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <h2 className="mb-1 text-xs font-medium text-sub">증상</h2>
                   <p className="text-sm text-ink">
