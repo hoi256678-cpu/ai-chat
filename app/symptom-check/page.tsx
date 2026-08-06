@@ -80,6 +80,15 @@ export default function SymptomCheckPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SymptomResult | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   function selectBodyPart(part: string) {
     // Clicking the already-selected part again deselects it.
@@ -138,6 +147,7 @@ export default function SymptomCheckPage() {
     setNote("");
     setError("");
     setResult(null);
+    setPhoto(null);
   }
 
   async function handleSubmit() {
@@ -159,6 +169,7 @@ export default function SymptomCheckPage() {
           duration,
           severity,
           note,
+          photo,
         }),
       });
       const data = await res.json();
@@ -373,6 +384,41 @@ export default function SymptomCheckPage() {
                     disabled={loading}
                     className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-base text-ink outline-none placeholder:text-sub/60 focus:border-accent disabled:opacity-60"
                   />
+
+                  {bodyPart === "피부" && (
+                    <div className="mt-4">
+                      {!photo ? (
+                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line px-4 py-3.5 text-sm font-medium text-sub transition hover:border-accent/40">
+                          <CameraIcon className="h-4 w-4" />
+                          사진 첨부 (선택)
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={handlePhotoChange}
+                          />
+                        </label>
+                      ) : (
+                        <div className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- 로컬에서 방금 고른 data URL 미리보기, next/image 최적화 대상 아님 */}
+                          <img
+                            src={photo}
+                            alt="첨부한 피부 사진"
+                            className="h-40 w-full rounded-2xl object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPhoto(null)}
+                            aria-label="사진 제거"
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white transition active:scale-95"
+                          >
+                            <XIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </StepSection>
               )}
 
@@ -562,6 +608,33 @@ function CheckIcon({ className }: { className?: string }) {
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
     </svg>
   );
