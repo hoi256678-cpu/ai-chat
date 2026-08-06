@@ -18,7 +18,14 @@ export type SymptomResult = {
 const FALLBACK_DISCLAIMER =
   "이 결과는 참고용 정보이며 의학적 진단이 아닙니다. 정확한 진단과 치료는 반드시 병원에서 의사와 상담하세요.";
 
-export function buildSymptomPrompt(input: SymptomInput) {
+export function buildSymptomPrompt(input: SymptomInput, classificationNote?: string) {
+  const classificationSection = classificationNote
+    ? `\n[AI 이미지 분류 결과 (참고용)]
+- 사용자가 첨부한 피부 사진을 로컬 딥러닝 모델이 분석한 결과: ${classificationNote}
+- 이 결과가 사용자가 보고한 증상과 일치하는지 검토하세요. 일치하면 안내에 반영하고, 불일치하는 듯하면 이를 명시적으로 언급하며 병원 방문을 권장하세요.
+- 확신도가 낮게 표기되어 있다면(60% 미만) 참고 정보로만 다루고 과신하지 마세요.\n`
+    : "";
+
   return `당신은 사용자가 병원에 가기 전 참고할 수 있도록 도와주는 의료 정보 안내 도우미입니다.
 아래 증상 정보를 바탕으로 가능성 있는 질환 후보와 방문하면 좋을 병원 진료과를 안내해주세요.
 
@@ -28,8 +35,7 @@ export function buildSymptomPrompt(input: SymptomInput) {
 - 지속 기간: ${input.duration}
 - 통증/불편함 정도: ${input.severity}
 - 추가 설명: ${input.note || "없음"}
-
-규칙:
+${classificationSection}규칙:
 - 확정적인 진단 표현("~입니다") 대신 "~일 가능성이 있습니다" 같은 완곡한 표현을 사용하세요.
 - 반드시 정확한 진단은 병원에서 받아야 한다는 점을 강조하세요.
 - homeCare(응급처치·관리법)와 foods(추천 음식)는 병원 방문 전까지 집에서 시도해볼 수 있는 일반적이고 안전한 수준으로만 안내하고, 약물 복용량이나 구체적인 처치 지시는 하지 마세요. 증상이 심하거나 응급 상황일 수 있다고 판단되면 homeCare 항목에 즉시 병원 방문(또는 119)을 권하는 문구를 포함하세요.
