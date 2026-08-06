@@ -30,18 +30,18 @@ export default function MainPage() {
   return (
     <main className="flex flex-1 flex-col overflow-y-auto bg-bg">
       <div
-        className="flex items-center justify-end gap-4 px-6"
-        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
+        className="flex items-center justify-end gap-1 px-4"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <button
           onClick={() => router.push("/settings")}
-          className="text-xs font-medium text-sub transition hover:text-ink"
+          className="rounded-full px-3 py-2.5 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
         >
           설정
         </button>
         <button
           onClick={handleLogout}
-          className="text-xs font-medium text-sub transition hover:text-ink"
+          className="rounded-full px-3 py-2.5 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
         >
           로그아웃
         </button>

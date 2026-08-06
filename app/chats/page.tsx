@@ -331,7 +331,7 @@ export default function CalendarPage() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-bg">
       <header
-        className="flex shrink-0 items-center justify-between px-3 pb-4 pr-6"
+        className="flex shrink-0 items-center justify-between px-3 pb-4 pr-3"
         style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         <div className="flex items-center gap-1">
@@ -348,7 +348,7 @@ export default function CalendarPage() {
         </div>
         <button
           onClick={handleLogout}
-          className="text-xs font-medium text-sub transition hover:text-ink"
+          className="rounded-full px-3 py-2.5 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
         >
           로그아웃
         </button>
