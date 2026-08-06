@@ -20,6 +20,13 @@ export function SymptomResultView({ result }: { result: SymptomResult }) {
         <p className="text-xs leading-relaxed text-ink/80">{result.disclaimer}</p>
       </div>
 
+      {result.photoClassification && (
+        <div className="flex items-center gap-2 rounded-full bg-tint px-4 py-2.5 text-xs font-medium text-ink/80">
+          <CameraIcon className="h-3.5 w-3.5 shrink-0 text-accent" />
+          <span>AI 사진 분석: {result.photoClassification}</span>
+        </div>
+      )}
+
       <SectionCard
         icon={<PulseIcon className="h-4 w-4" />}
         title="의심되는 증상/질환"
@@ -219,6 +226,20 @@ function UtensilsIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.7" />
     </svg>
   );
 }

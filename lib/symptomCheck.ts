@@ -13,6 +13,9 @@ export type SymptomResult = {
   disclaimer: string;
   homeCare: string[];
   foods: string[];
+  // Only set on the live result screen for a photo-attached 피부 check —
+  // not persisted to symptom_checks, so history replays never carry it.
+  photoClassification?: string;
 };
 
 const FALLBACK_DISCLAIMER =

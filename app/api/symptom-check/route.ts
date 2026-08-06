@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       ? await generateGeminiReply([{ role: "user", content: prompt }])
       : await generateReply([{ role: "user", content: prompt }]);
     const result = parseSymptomResult(raw);
-    return Response.json(result);
+    return Response.json({ ...result, photoClassification: classificationNote });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요.";
