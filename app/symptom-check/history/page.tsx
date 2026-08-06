@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getSymptomChecks,
@@ -38,6 +38,30 @@ export default function SymptomCheckHistoryPage() {
   const [selectedRecord, setSelectedRecord] = useState<SymptomCheckRecord | null>(
     null
   );
+  const [activeIndex, setActiveIndex] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Tracks which card sits closest to the track's horizontal center, so the
+  // "front" card (like the one centered in a phone's app-switcher deck) can
+  // be emphasized while its neighbors peek in, dimmed, from the sides.
+  function handleTrackScroll() {
+    const track = trackRef.current;
+    if (!track) return;
+    const center = track.scrollLeft + track.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return;
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(cardCenter - center);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    setActiveIndex(closestIndex);
+  }
 
   useEffect(() => {
     getSymptomChecks()
@@ -93,27 +117,63 @@ export default function SymptomCheckHistoryPage() {
           )}
 
           {ready && !error && records.length > 0 && (
-            <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2">
-              {records.map((record) => (
-                <button
-                  key={record.id}
-                  onClick={() => setSelectedRecord(record)}
-                  className="flex w-40 shrink-0 snap-start flex-col rounded-2xl border border-line bg-surface p-4 text-left transition active:scale-[0.97]"
-                >
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="shrink-0 text-sm font-semibold text-ink">
-                      {record.bodyPart}
-                    </span>
-                  </div>
-                  <span className="mt-0.5 text-[11px] text-sub">
-                    {formatRelativeDate(record.createdAt)}
-                  </span>
-                  <p className="mt-2.5 line-clamp-3 text-xs leading-relaxed text-ink">
-                    {record.conditions[0] ?? record.symptoms.join(", ")}
-                  </p>
-                </button>
-              ))}
-            </div>
+            <>
+              <div
+                ref={trackRef}
+                onScroll={handleTrackScroll}
+                className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3"
+                style={{ paddingLeft: "12%", paddingRight: "12%" }}
+              >
+                {records.map((record, index) => {
+                  const active = index === activeIndex;
+                  return (
+                    <button
+                      key={record.id}
+                      ref={(el) => {
+                        cardRefs.current[index] = el;
+                      }}
+                      onClick={() => setSelectedRecord(record)}
+                      className={
+                        active
+                          ? "flex h-44 w-[76%] shrink-0 snap-center scale-100 flex-col rounded-3xl border border-accent/25 bg-surface p-5 text-left opacity-100 shadow-[0_12px_28px_-14px_rgba(22,33,44,0.28)] transition-all duration-200"
+                          : "flex h-44 w-[76%] shrink-0 snap-center scale-[0.94] flex-col rounded-3xl border border-line bg-surface p-5 text-left opacity-50 shadow-none transition-all duration-200"
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-base font-semibold text-ink">
+                          {record.bodyPart}
+                        </span>
+                        <span className="text-xs text-sub">
+                          {formatRelativeDate(record.createdAt)}
+                        </span>
+                      </div>
+                      <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-ink">
+                        {record.conditions[0] ?? record.symptoms.join(", ")}
+                      </p>
+                      <p className="text-xs font-medium text-accent">
+                        눌러서 자세히 보기 →
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {records.length > 1 && (
+                <div className="flex justify-center gap-1.5 pt-2">
+                  {records.map((record, index) => (
+                    <span
+                      key={record.id}
+                      aria-hidden
+                      className={
+                        index === activeIndex
+                          ? "h-1.5 w-4 rounded-full bg-accent transition-all"
+                          : "h-1.5 w-1.5 rounded-full bg-line transition-all"
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
