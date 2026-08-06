@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run start` — run production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
 
-No test runner is configured in this repo.
+No test runner is configured for the Next.js app. The separate `ml-service/` Python subsystem (see below) uses pytest — run `cd ml-service && source .venv/Scripts/activate && python -m pytest -v`.
 
 Requires `GEMINI_API_KEY` in `.env.local` (see `.env.local.example`) to use either API route. Optional `GEMINI_MODEL` env var overrides the default model (`gemini-flash-latest`).
 
@@ -22,6 +22,10 @@ Requires two Kakao keys in `.env.local` for the nearby-hospitals feature on `/sy
 ## Architecture
 
 Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias maps to repo root.
+
+### ML service (`ml-service/`)
+
+A local-only Python/FastAPI service (Python 3.12 venv, CUDA PyTorch) that trains and serves an EfficientNet-B0 skin-condition image classifier via `POST /predict`. It is entirely separate from the Next.js app above — no shared code, own `requirements.txt`, own pytest suite — and is never deployed to Vercel.
 
 **This project pins a Next.js canary build (`16.3.0-canary.91`)** whose APIs/conventions may diverge from training data — see `node_modules/next/dist/docs/` before assuming App Router behavior, and heed the auto-generated agent-rules block imported above.
 

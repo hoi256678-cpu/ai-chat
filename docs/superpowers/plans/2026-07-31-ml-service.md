@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- 데이터셋: AI Hub "피부질환 진단 의료 이미지" (32종, 106,776장) 중 **5~10종 서브셋**만 사용
+- 데이터셋: ~~AI Hub "피부질환 진단 의료 이미지"~~ → **HAM10000** (오픈 벤치마크, IRB/승인 불필요)로 변경 (2026-07-31) — AI Hub판은 안심존 전용이라 IRB 승인 + 14일 대기 + 30일 한정 이용이 필요해 1개월 마감과 안 맞음. `akiec`/`bcc`/`bkl`/`df`/`mel`/`nv`/`vasc` 7종 중 **`vasc`/`df`/`bcc`/`akiec` 4종**만 사용 (시각적 구분 쉬운 조합 — 정확도 90% 목표, `nv`는 전체 67%라 제외)
 - 모델: ImageNet 사전학습 CNN(EfficientNet-B0 계열) 전이학습 — 처음부터 학습하지 않음
 - 하드웨어: RTX 4070 SUPER, 12GB VRAM (로컬 학습)
 - **Python 버전: 3.12 필수.** 이 머신엔 Python 3.14만 설치돼 있는데, PyTorch CUDA 빌드(`download.pytorch.org/whl/cu124`)는 아직 cp313까지만 지원하고 cp314 휠이 없음 — 3.14로 진행하면 CPU 전용으로 깔려서 GPU를 못 씀. `ml-service/` 전용 venv는 반드시 Python 3.12로 생성.
@@ -27,8 +27,10 @@
 - `ml-service/requirements.txt` — 의존성 (신규)
 - `ml-service/model.py` — 공유 모델 정의 `build_model()` (신규)
 - `ml-service/test_model.py` — model.py 테스트 (신규)
-- `ml-service/prepare_data.py` — AI Hub 원본 데이터를 train/val로 정리하는 스크립트 (신규)
-- `ml-service/test_prepare_data.py` — prepare_data.py 테스트 (신규)
+- `ml-service/organize_ham10000.py` — HAM10000 원본(평평한 이미지 폴더 + CSV 라벨)을 클래스별 폴더로 변환하는 어댑터 스크립트 (신규, Task 6)
+- `ml-service/test_organize_ham10000.py` — organize_ham10000.py 테스트 (신규, Task 6)
+- `ml-service/prepare_data.py` — (organize_ham10000.py가 만든) 클래스별 폴더 데이터를 train/val로 정리하는 스크립트 (기존)
+- `ml-service/test_prepare_data.py` — prepare_data.py 테스트 (기존)
 - `ml-service/train.py` — 학습 스크립트, `skin_model.pth` + `classes.json` 생성 (신규)
 - `ml-service/test_train.py` — train.py 테스트 (신규, 합성 데이터로 1 epoch만 실행)
 - `ml-service/serve.py` — FastAPI 서버, `POST /predict` (신규)
@@ -691,26 +693,223 @@ git commit -m "Add FastAPI /predict endpoint for skin classifier"
 
 ---
 
-### Task 5: 실제 데이터로 학습 실행 (수동 런북 — 코드 작성 아님)
+### Task 6: HAM10000 어댑터 스크립트 (`organize_ham10000.py`)
 
-이 태스크는 AI Hub 로그인/승인이 필요한 데이터 다운로드와 실제 GPU 학습(시간 소요)을 포함하므로, 에이전트가 아니라 **사용자가 직접 실행**하는 태스크임. subagent-driven-development로 이 계획을 실행하더라도 이 태스크는 건너뛰고 사용자에게 넘길 것.
+HAM10000 원본 배포는 클래스별 폴더가 아니라 **평평한 이미지 폴더(1개 이상) + `HAM10000_metadata.csv`**(컬럼: `lesion_id`, `image_id`, `dx`, `dx_type`, `age`, `sex`, `localization`) 구조. `prepare_data.py`는 이미 `raw_dir/<class>/*.jpg` 폴더-당-클래스 구조를 기대하도록 구현/테스트/리뷰가 끝나 있으므로, 그 계약을 그대로 유지하면서 HAM10000의 CSV+평평한 폴더 형식만 그 구조로 변환하는 어댑터를 앞단에 추가한다.
+
+**Files:**
+- Create: `ml-service/organize_ham10000.py`
+- Test: `ml-service/test_organize_ham10000.py`
+- Modify: `ml-service/prepare_data.py` — `TARGET_CLASSES`를 HAM10000 dx 코드로 교체
+
+**Interfaces:**
+- Produces: `organize_ham10000(metadata_csv: Path, image_dirs: list[Path], out_dir: Path, classes: list[str] = TARGET_CLASSES) -> dict[str, int]` (클래스별 복사된 이미지 수를 담은 dict 반환). 출력 계약은 `prepare_data.py`가 그대로 받는 `out_dir/<class>/*.jpg` — 이 `out_dir`가 곧 `prepare_data.py`의 `raw_dir` 인자가 됨.
+
+- [ ] **Step 1: 실패하는 테스트 작성**
+
+`ml-service/test_organize_ham10000.py`:
+
+```python
+import csv
+from pathlib import Path
+
+from PIL import Image
+
+from organize_ham10000 import organize_ham10000
+
+
+def make_fixture(root: Path):
+    image_dir = root / "images"
+    image_dir.mkdir(parents=True, exist_ok=True)
+    rows = [
+        {"lesion_id": "l1", "image_id": "img1", "dx": "vasc"},
+        {"lesion_id": "l2", "image_id": "img2", "dx": "df"},
+        {"lesion_id": "l3", "image_id": "img3", "dx": "nv"},  # not a target class
+        {"lesion_id": "l4", "image_id": "img4", "dx": "vasc"},
+    ]
+    for row in rows:
+        Image.new("RGB", (16, 16)).save(image_dir / f"{row['image_id']}.jpg")
+
+    metadata_csv = root / "HAM10000_metadata.csv"
+    with metadata_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["lesion_id", "image_id", "dx"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return metadata_csv, image_dir
+
+
+def test_organize_ham10000_sorts_into_class_folders(tmp_path):
+    metadata_csv, image_dir = make_fixture(tmp_path)
+    out_dir = tmp_path / "organized"
+
+    counts = organize_ham10000(
+        metadata_csv, [image_dir], out_dir, classes=["vasc", "df"]
+    )
+
+    assert counts == {"vasc": 2, "df": 1}
+    assert (out_dir / "vasc" / "img1.jpg").exists()
+    assert (out_dir / "vasc" / "img4.jpg").exists()
+    assert (out_dir / "df" / "img2.jpg").exists()
+    assert not (out_dir / "nv").exists()
+
+
+def test_organize_ham10000_searches_multiple_image_dirs(tmp_path):
+    part1 = tmp_path / "part1"
+    part2 = tmp_path / "part2"
+    part1.mkdir()
+    part2.mkdir()
+    Image.new("RGB", (16, 16)).save(part1 / "imgA.jpg")
+    Image.new("RGB", (16, 16)).save(part2 / "imgB.jpg")
+
+    metadata_csv = tmp_path / "HAM10000_metadata.csv"
+    with metadata_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["lesion_id", "image_id", "dx"])
+        writer.writeheader()
+        writer.writerow({"lesion_id": "l1", "image_id": "imgA", "dx": "bcc"})
+        writer.writerow({"lesion_id": "l2", "image_id": "imgB", "dx": "bcc"})
+
+    out_dir = tmp_path / "organized"
+    counts = organize_ham10000(metadata_csv, [part1, part2], out_dir, classes=["bcc"])
+
+    assert counts == {"bcc": 2}
+    assert (out_dir / "bcc" / "imgA.jpg").exists()
+    assert (out_dir / "bcc" / "imgB.jpg").exists()
+```
+
+- [ ] **Step 2: 테스트 실행해서 실패 확인**
+
+```bash
+cd ml-service && source .venv/Scripts/activate && python -m pytest test_organize_ham10000.py -v
+```
+
+Expected: FAIL — `ModuleNotFoundError: No module named 'organize_ham10000'`
+
+- [ ] **Step 3: `organize_ham10000.py` 구현**
+
+`ml-service/organize_ham10000.py`:
+
+```python
+import csv
+import shutil
+import sys
+from pathlib import Path
+
+TARGET_CLASSES = ["vasc", "df", "bcc", "akiec"]
+IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
+
+
+def _find_image(image_id: str, image_dirs: list[Path]) -> Path | None:
+    for image_dir in image_dirs:
+        for suffix in IMAGE_SUFFIXES:
+            candidate = image_dir / f"{image_id}{suffix}"
+            if candidate.exists():
+                return candidate
+    return None
+
+
+def organize_ham10000(
+    metadata_csv: Path,
+    image_dirs: list[Path],
+    out_dir: Path,
+    classes: list[str] = TARGET_CLASSES,
+) -> dict[str, int]:
+    counts = {class_name: 0 for class_name in classes}
+
+    with metadata_csv.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            dx = row["dx"]
+            if dx not in classes:
+                continue
+
+            image_path = _find_image(row["image_id"], image_dirs)
+            if image_path is None:
+                raise FileNotFoundError(
+                    f"이미지 '{row['image_id']}'를 {image_dirs}에서 찾을 수 없습니다."
+                )
+
+            dest_dir = out_dir / dx
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(image_path, dest_dir / image_path.name)
+            counts[dx] += 1
+
+    return counts
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 4:
+        print("사용법: python organize_ham10000.py <metadata_csv> <out_dir> <image_dir> [image_dir2 ...]")
+        raise SystemExit(1)
+
+    result_counts = organize_ham10000(
+        Path(sys.argv[1]), [Path(p) for p in sys.argv[3:]], Path(sys.argv[2])
+    )
+    print(f"정리 완료: {result_counts}")
+```
+
+- [ ] **Step 4: 테스트 실행해서 통과 확인**
+
+```bash
+cd ml-service && python -m pytest test_organize_ham10000.py -v
+```
+
+Expected: PASS (2 passed)
+
+- [ ] **Step 5: `prepare_data.py`의 `TARGET_CLASSES`를 HAM10000 dx 코드로 교체**
+
+`ml-service/prepare_data.py`에서 기존 한국어 클래스명 리스트(`아토피피부염`, `여드름`, `두드러기`, `건선`, `대상포진`)와 그 위 주석을 아래로 교체:
+
+```python
+# HAM10000 dx 코드 중 시각적으로 뚜렷이 구분되는 4종만 사용 (정확도 90% 목표,
+# nv는 전체 데이터의 ~67%를 차지해 제외). organize_ham10000.py가 먼저 이 이름의
+# 폴더로 원본을 정리해줘야 prepare_data.py가 읽을 수 있음.
+TARGET_CLASSES = ["vasc", "df", "bcc", "akiec"]
+```
+
+기존 예외 메시지("AI Hub에서 받은 데이터의 실제 폴더 구조를 확인하고 TARGET_CLASSES를 맞춰주세요")는 그대로 둬도 무방 (여전히 유효한 조언).
+
+- [ ] **Step 6: 전체 테스트 스위트 실행해서 회귀 확인**
+
+```bash
+cd ml-service && python -m pytest -v
+```
+
+Expected: 기존 테스트 전부 PASS (TARGET_CLASSES 기본값 변경은 테스트가 전부 `classes=` 명시적 override를 쓰므로 영향 없음)
+
+- [ ] **Step 7: 커밋**
+
+```bash
+git add ml-service/organize_ham10000.py ml-service/test_organize_ham10000.py ml-service/prepare_data.py
+git commit -m "Add HAM10000 adapter and switch prepare_data.py to HAM10000 classes"
+```
+
+---
+
+### Task 7: 실제 데이터로 학습 실행 (수동 런북 — 코드 작성 아님)
+
+이 태스크는 데이터 다운로드와 실제 GPU 학습(시간 소요)을 포함하므로, 에이전트가 아니라 **사용자가 직접 실행**하는 태스크임. subagent-driven-development로 이 계획을 실행하더라도 이 태스크는 건너뛰고 사용자에게 넘길 것.
 
 **Files:**
 - 없음 (운영 절차만, `ml-service/data/`는 `.gitignore`로 커밋 안 됨)
 
-- [ ] **Step 1: AI Hub에서 "피부질환 진단 의료 이미지" 데이터셋 다운로드/승인 신청**
+- [ ] **Step 1: HAM10000 다운로드**
 
-https://aihub.or.kr 에서 로그인 후 해당 데이터셋 페이지에서 다운로드 승인 신청 → 승인 후 다운로드 및 압축 해제
+Harvard Dataverse(https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DBW86T) 또는 Kaggle(예: "Skin Cancer MNIST: HAM10000") 중 편한 쪽에서 다운로드. `HAM10000_metadata.csv`와 이미지 압축파일(보통 `HAM10000_images_part_1`, `HAM10000_images_part_2` 두 개로 나뉨)을 받아서 압축 해제. 로그인/IRB 승인 절차 없음.
 
-- [ ] **Step 2: 실제 폴더 구조 확인, 필요시 `prepare_data.py`의 `TARGET_CLASSES` 수정**
+- [ ] **Step 2: 어댑터로 클래스별 폴더 정리**
 
-압축 해제한 경로를 열어서 클래스별 폴더명이 `prepare_data.py`의 `TARGET_CLASSES`(아토피피부염/여드름/두드러기/건선/대상포진)와 일치하는지 확인. 다르면 실제 폴더명으로 상수를 고치고, 이미지 수가 너무 적은 클래스는 다른 클래스로 교체 (5~10종 범위 유지)
+```bash
+cd ml-service && source .venv/Scripts/activate
+python organize_ham10000.py <다운로드받은_경로>/HAM10000_metadata.csv organized <이미지폴더1> <이미지폴더2>
+```
+
+Expected: `organized/vasc/`, `organized/df/`, `organized/bcc/`, `organized/akiec/` 폴더에 각각 이미지가 채워짐. 클래스별 이미지 수가 너무 적으면(예: 수십 장 미만) `TARGET_CLASSES`를 다른 dx 코드로 교체하는 것도 고려.
 
 - [ ] **Step 3: train/val 분리 실행**
 
 ```bash
-cd ml-service && source .venv/Scripts/activate
-python prepare_data.py <다운로드받은_원본_경로> data
+python prepare_data.py organized data
 ```
 
 Expected: `data/train/<class>/`, `data/val/<class>/` 폴더에 이미지가 채워짐
@@ -721,7 +920,7 @@ Expected: `data/train/<class>/`, `data/val/<class>/` 폴더에 이미지가 채�
 python train.py
 ```
 
-`train.py`의 `if __name__ == "__main__": train()` 호출 — GPU가 잡히면 자동으로 `cuda` 사용. 각 epoch마다 검증 정확도가 출력됨. 기본 10 epoch 기준 클래스 5~10개, 데이터 규모에 따라 다르지만 RTX 4070 SUPER에서 수십 분~2시간 내외 예상
+`train.py`의 `if __name__ == "__main__": train()` 호출 — GPU가 잡히면 자동으로 `cuda` 사용. 각 epoch마다 검증 정확도가 출력됨. 클래스 4개 기준 RTX 4070 SUPER에서 수십 분 내외 예상. 목표(90%)에 못 미치면 `epochs`를 늘리거나(`train(epochs=20)`), Task 6에서 언급한 대로 `TARGET_CLASSES` 조합을 바꿔 재시도.
 
 - [ ] **Step 5: 결과물 확인**
 
@@ -729,7 +928,7 @@ python train.py
 ls -la skin_model.pth classes.json
 ```
 
-Expected: 두 파일 모두 존재. `classes.json` 내용이 실제 학습에 사용한 클래스명과 일치하는지 확인
+Expected: 두 파일 모두 존재. `classes.json` 내용이 `["akiec", "bcc", "df", "vasc"]`(정렬 순서)와 일치하는지 확인
 
 - [ ] **Step 6: 실제 서버 기동 후 curl 스모크 테스트**
 
@@ -743,11 +942,11 @@ uvicorn serve:app --port 8000
 curl -X POST http://localhost:8000/predict -F "file=@<샘플_이미지_경로>"
 ```
 
-Expected: `{"class": "...", "confidence": 0.xx}` 형태 JSON — 확신도가 너무 낮거나(예: 1/클래스수에 가까움) 매 요청마다 같은 클래스만 나오면 과적합/데이터 문제이니 `train.py`의 epoch/데이터 규모를 조정
+Expected: `{"class": "...", "confidence": 0.xx}` 형태 JSON — 확신도가 너무 낮거나(예: 1/4에 가까움) 매 요청마다 같은 클래스만 나오면 과적합/데이터 문제이니 `train.py`의 epoch/데이터 규모를 조정
 
-- [ ] **Step 7: 검증 정확도를 스펙/발표자료용으로 기록**
+- [ ] **Step 7: 클래스별 정확도와 전체 검증 정확도를 스펙/발표자료용으로 기록**
 
-`train.py` 출력의 마지막 epoch 검증 정확도를 어딘가(발표자료, 커밋 메시지 등)에 남겨둘 것 — 졸작 평가 자료로 재사용
+`train.py` 출력의 마지막 epoch 검증 정확도(및 가능하면 클래스별 정확도)를 어딘가(발표자료, 커밋 메시지 등)에 남겨둘 것 — 졸작 평가 자료로 재사용. 90%에 못 미치면 Step 4의 재시도 루프로 돌아갈 것.
 
 ---
 
