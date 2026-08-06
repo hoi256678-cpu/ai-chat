@@ -8,6 +8,31 @@ import {
 } from "@/lib/symptomHistory";
 import { SymptomResultView } from "@/components/SymptomResultView";
 
+// Shared by the live onScroll handler (keeps activeIndex in sync while the
+// user drags or swipes) and the explicit post-drag snap (see handleMouseUp)
+// — both need "which card is nearest the track's horizontal center" from
+// the same DOM measurements.
+function findClosestCard(
+  track: HTMLDivElement,
+  cards: (HTMLButtonElement | null)[]
+): { index: number; card: HTMLButtonElement } | null {
+  const center = track.scrollLeft + track.clientWidth / 2;
+  let closestIndex = 0;
+  let closestDistance = Infinity;
+  let closestCard: HTMLButtonElement | null = null;
+  cards.forEach((card, index) => {
+    if (!card) return;
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    const distance = Math.abs(cardCenter - center);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index;
+      closestCard = card;
+    }
+  });
+  return closestCard ? { index: closestIndex, card: closestCard } : null;
+}
+
 function formatRelativeDate(iso: string) {
   const date = new Date(iso);
   const now = new Date();
@@ -45,11 +70,25 @@ export default function SymptomCheckHistoryPage() {
   // Mouse-drag panning for the card track. Touch/trackpad swipe already
   // works via native overflow-x scrolling (no mousedown/mousemove involved),
   // so this is purely additive for desktop mouse users.
+  //
+  // dragRef only exists WHILE a drag is live (mousedown..mouseup) — it is
+  // set to null the instant mouseup fires. Without that, a stray mousemove
+  // between two drags (e.g. the cursor drifting back toward the track
+  // before the next mousedown) would still see the *previous* drag's
+  // stale startX/startScrollLeft and yank the track to a bogus position —
+  // this was the actual cause of "drag does nothing, track springs back
+  // to an earlier card no matter how far I drag."
   const dragRef = useRef<{
     startX: number;
     startScrollLeft: number;
     moved: boolean;
   } | null>(null);
+  // Separate from dragRef: the card <button>'s click event fires right
+  // after mouseup, in the same event-loop turn, and needs to know whether
+  // the drag that just ended actually moved the track (to suppress
+  // opening the card). Set once in handleMouseUp, consumed once by
+  // handleCardClick — independent of dragRef's own lifecycle.
+  const justDraggedRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
   function handleMouseDown(event: ReactMouseEvent<HTMLDivElement>) {
@@ -77,11 +116,25 @@ export default function SymptomCheckHistoryPage() {
     }
 
     function handleMouseUp() {
+      const drag = dragRef.current;
+      dragRef.current = null;
       setIsDragging(false);
-      // Deliberately not clearing dragRef here — the card <button>'s click
-      // event fires right after this mouseup, in the same event-loop turn,
-      // and handleCardClick needs to still see this drag's `moved` flag to
-      // know whether to suppress that click. The next mousedown replaces it.
+      if (!drag?.moved) return;
+      justDraggedRef.current = true;
+
+      // Explicitly settle on the nearest card ourselves instead of relying
+      // on CSS scroll-snap to catch a JS-driven scrollLeft change.
+      const track = trackRef.current;
+      if (!track) return;
+      const closest = findClosestCard(track, cardRefs.current);
+      if (closest) {
+        const targetLeft =
+          closest.card.offsetLeft +
+          closest.card.offsetWidth / 2 -
+          track.clientWidth / 2;
+        track.scrollTo({ left: targetLeft, behavior: "smooth" });
+        setActiveIndex(closest.index);
+      }
     }
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -92,10 +145,14 @@ export default function SymptomCheckHistoryPage() {
     };
   }, []);
 
-  // A card's onClick fires right after mouseup — skip it when the mouse
-  // actually dragged the track, so panning past a card doesn't also open it.
+  // A card's onClick fires right after mouseup — skip it (once) when the
+  // mouse actually dragged the track, so panning past a card doesn't also
+  // open it.
   function handleCardClick(record: SymptomCheckRecord) {
-    if (dragRef.current?.moved) return;
+    if (justDraggedRef.current) {
+      justDraggedRef.current = false;
+      return;
+    }
     setSelectedRecord(record);
   }
 
@@ -105,19 +162,8 @@ export default function SymptomCheckHistoryPage() {
   function handleTrackScroll() {
     const track = trackRef.current;
     if (!track) return;
-    const center = track.scrollLeft + track.clientWidth / 2;
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-    cardRefs.current.forEach((card, index) => {
-      if (!card) return;
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-      const distance = Math.abs(cardCenter - center);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-    setActiveIndex(closestIndex);
+    const closest = findClosestCard(track, cardRefs.current);
+    if (closest) setActiveIndex(closest.index);
   }
 
   useEffect(() => {
@@ -183,7 +229,7 @@ export default function SymptomCheckHistoryPage() {
               onMouseDown={handleMouseDown}
               className={
                 isDragging
-                  ? "no-scrollbar flex snap-none overflow-x-auto select-none [cursor:grabbing]"
+                  ? "no-scrollbar flex snap-x snap-mandatory overflow-x-auto select-none [cursor:grabbing]"
                   : "no-scrollbar flex snap-x snap-mandatory overflow-x-auto [cursor:grab]"
               }
               style={{ paddingLeft: "6%", paddingRight: "6%" }}
@@ -269,11 +315,11 @@ export default function SymptomCheckHistoryPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <button
             aria-label="닫기"
-            className="absolute inset-0 bg-ink/40"
+            className="sheet-backdrop-in absolute inset-0 bg-ink/40"
             onClick={() => setSelectedRecord(null)}
           />
           <div
-            className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
+            className="sheet-rise-in relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
             style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
           >
             <div className="shrink-0 px-5 pt-5">
