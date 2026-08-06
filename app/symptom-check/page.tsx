@@ -97,6 +97,7 @@ export default function SymptomCheckPage() {
       setSymptoms([]);
       setShowCustomSymptom(false);
       setCustomSymptom("");
+      setPhoto(null);
       return;
     }
     setBodyPart(part);
@@ -104,6 +105,7 @@ export default function SymptomCheckPage() {
     setSymptoms([]);
     setShowCustomSymptom(false);
     setCustomSymptom("");
+    setPhoto(null);
   }
 
   function selectCustomBodyPart() {
@@ -114,6 +116,7 @@ export default function SymptomCheckPage() {
       setSymptoms([]);
       setShowCustomSymptom(false);
       setCustomSymptom("");
+      setPhoto(null);
       return;
     }
     setBodyPart("");
@@ -121,6 +124,7 @@ export default function SymptomCheckPage() {
     setSymptoms([]);
     setShowCustomSymptom(false);
     setCustomSymptom("");
+    setPhoto(null);
   }
 
   function toggleSymptom(value: string) {
