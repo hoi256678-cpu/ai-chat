@@ -100,82 +100,87 @@ export default function SymptomCheckHistoryPage() {
       </header>
 
       <div
-        className="flex-1 overflow-y-auto py-6"
+        className="flex flex-1 flex-col overflow-y-auto py-6"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto w-full max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
-          {!ready && (
-            <p className="pt-10 text-center text-sm text-sub">불러오는 중…</p>
-          )}
-          {ready && error && (
-            <p className="pt-10 text-center text-sm text-danger">{error}</p>
-          )}
-          {ready && !error && records.length === 0 && (
-            <p className="pt-10 text-center text-sm text-sub">
-              아직 증상체크 기록이 없어요.
-            </p>
-          )}
+        {!ready && (
+          <p className="pt-10 text-center text-sm text-sub">불러오는 중…</p>
+        )}
+        {ready && error && (
+          <p className="pt-10 text-center text-sm text-danger">{error}</p>
+        )}
+        {ready && !error && records.length === 0 && (
+          <p className="pt-10 text-center text-sm text-sub">
+            아직 증상체크 기록이 없어요.
+          </p>
+        )}
 
-          {ready && !error && records.length > 0 && (
-            <>
-              <div
-                ref={trackRef}
-                onScroll={handleTrackScroll}
-                className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3"
-                style={{ paddingLeft: "12%", paddingRight: "12%" }}
-              >
-                {records.map((record, index) => {
-                  const active = index === activeIndex;
-                  return (
+        {ready && !error && records.length > 0 && (
+          <>
+            {/* Full-bleed (not the app's usual mx-auto max-w-md column) so
+                each card can be as large as the screen itself, the way a
+                phone's app-switcher deck fills the whole width. */}
+            <div
+              ref={trackRef}
+              onScroll={handleTrackScroll}
+              className="flex snap-x snap-mandatory overflow-x-auto"
+              style={{ paddingLeft: "6%", paddingRight: "6%" }}
+            >
+              {records.map((record, index) => {
+                const active = index === activeIndex;
+                return (
+                  <div
+                    key={record.id}
+                    className="flex w-[88%] shrink-0 snap-center justify-center px-2 sm:w-[70%] md:w-[55%] lg:w-[42%]"
+                  >
                     <button
-                      key={record.id}
                       ref={(el) => {
                         cardRefs.current[index] = el;
                       }}
                       onClick={() => setSelectedRecord(record)}
                       className={
                         active
-                          ? "flex h-44 w-[76%] shrink-0 snap-center scale-100 flex-col rounded-3xl border border-accent/25 bg-surface p-5 text-left opacity-100 shadow-[0_12px_28px_-14px_rgba(22,33,44,0.28)] transition-all duration-200 sm:h-56 sm:p-6"
-                          : "flex h-44 w-[76%] shrink-0 snap-center scale-[0.94] flex-col rounded-3xl border border-line bg-surface p-5 text-left opacity-50 shadow-none transition-all duration-200 sm:h-56 sm:p-6"
+                          ? "flex h-72 w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300 sm:h-80"
+                          : "flex h-72 w-full shrink-0 scale-90 flex-col rounded-[2rem] border border-line bg-surface p-7 text-left opacity-40 shadow-none transition-all duration-300 sm:h-80"
                       }
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-semibold text-ink sm:text-xl">
+                        <span className="text-xl font-bold text-ink sm:text-2xl">
                           {record.bodyPart}
                         </span>
                         <span className="text-xs text-sub sm:text-sm">
                           {formatRelativeDate(record.createdAt)}
                         </span>
                       </div>
-                      <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-ink sm:mt-4 sm:text-base">
+                      <p className="mt-4 line-clamp-4 flex-1 text-base leading-relaxed text-ink sm:text-lg">
                         {record.conditions[0] ?? record.symptoms.join(", ")}
                       </p>
-                      <p className="text-xs font-medium text-accent sm:text-sm">
+                      <p className="text-sm font-medium text-accent">
                         눌러서 자세히 보기 →
                       </p>
                     </button>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              {records.length > 1 && (
-                <div className="flex justify-center gap-1.5 pt-2">
-                  {records.map((record, index) => (
-                    <span
-                      key={record.id}
-                      aria-hidden
-                      className={
-                        index === activeIndex
-                          ? "h-1.5 w-4 rounded-full bg-accent transition-all"
-                          : "h-1.5 w-1.5 rounded-full bg-line transition-all"
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {records.length > 1 && (
+              <div className="flex justify-center gap-1.5 pt-4">
+                {records.map((record, index) => (
+                  <span
+                    key={record.id}
+                    aria-hidden
+                    className={
+                      index === activeIndex
+                        ? "h-1.5 w-5 rounded-full bg-accent transition-all"
+                        : "h-1.5 w-1.5 rounded-full bg-line transition-all"
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {selectedRecord && (
