@@ -1,4 +1,6 @@
 import { generateReply } from "@/lib/ai";
+import { generateReply as generateGeminiReply } from "@/lib/gemini";
+import { classifySkinPhoto, describeClassification } from "@/lib/skinClassifier";
 import {
   buildSymptomPrompt,
   parseSymptomResult,
@@ -15,6 +17,10 @@ export async function POST(request: Request) {
     severity: body?.severity ?? "",
     note: body?.note ?? "",
   };
+  const photo: string | undefined =
+    typeof body?.photo === "string" && body.photo.length > 0
+      ? body.photo
+      : undefined;
 
   if (!input.bodyPart || input.symptoms.length === 0) {
     return Response.json(
@@ -24,8 +30,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const prompt = buildSymptomPrompt(input);
-    const raw = await generateReply([{ role: "user", content: prompt }]);
+    const classification = photo ? await classifySkinPhoto(photo) : null;
+    const classificationNote = classification
+      ? describeClassification(classification)
+      : undefined;
+    const prompt = buildSymptomPrompt(input, classificationNote);
+    const raw = photo
+      ? await generateGeminiReply([{ role: "user", content: prompt }])
+      : await generateReply([{ role: "user", content: prompt }]);
     const result = parseSymptomResult(raw);
     return Response.json(result);
   } catch (error) {
