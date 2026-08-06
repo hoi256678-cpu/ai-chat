@@ -103,7 +103,7 @@ export default function SymptomCheckHistoryPage() {
         className="flex-1 overflow-y-auto py-6"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto w-full max-w-md">
+        <div className="mx-auto w-full max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
           {!ready && (
             <p className="pt-10 text-center text-sm text-sub">불러오는 중…</p>
           )}
@@ -135,22 +135,22 @@ export default function SymptomCheckHistoryPage() {
                       onClick={() => setSelectedRecord(record)}
                       className={
                         active
-                          ? "flex h-44 w-[76%] shrink-0 snap-center scale-100 flex-col rounded-3xl border border-accent/25 bg-surface p-5 text-left opacity-100 shadow-[0_12px_28px_-14px_rgba(22,33,44,0.28)] transition-all duration-200"
-                          : "flex h-44 w-[76%] shrink-0 snap-center scale-[0.94] flex-col rounded-3xl border border-line bg-surface p-5 text-left opacity-50 shadow-none transition-all duration-200"
+                          ? "flex h-44 w-[76%] shrink-0 snap-center scale-100 flex-col rounded-3xl border border-accent/25 bg-surface p-5 text-left opacity-100 shadow-[0_12px_28px_-14px_rgba(22,33,44,0.28)] transition-all duration-200 sm:h-56 sm:p-6"
+                          : "flex h-44 w-[76%] shrink-0 snap-center scale-[0.94] flex-col rounded-3xl border border-line bg-surface p-5 text-left opacity-50 shadow-none transition-all duration-200 sm:h-56 sm:p-6"
                       }
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-semibold text-ink">
+                        <span className="text-base font-semibold text-ink sm:text-xl">
                           {record.bodyPart}
                         </span>
-                        <span className="text-xs text-sub">
+                        <span className="text-xs text-sub sm:text-sm">
                           {formatRelativeDate(record.createdAt)}
                         </span>
                       </div>
-                      <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-ink">
+                      <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-ink sm:mt-4 sm:text-base">
                         {record.conditions[0] ?? record.symptoms.join(", ")}
                       </p>
-                      <p className="text-xs font-medium text-accent">
+                      <p className="text-xs font-medium text-accent sm:text-sm">
                         눌러서 자세히 보기 →
                       </p>
                     </button>
@@ -186,7 +186,7 @@ export default function SymptomCheckHistoryPage() {
             onClick={() => setSelectedRecord(null)}
           />
           <div
-            className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface"
+            className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
             style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
           >
             <div className="shrink-0 px-5 pt-5">
