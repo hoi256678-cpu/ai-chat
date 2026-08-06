@@ -19,6 +19,8 @@ Requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env
 
 Requires two Kakao keys in `.env.local` for the nearby-hospitals feature on `/symptom-check`: `KAKAO_REST_API_KEY` (server-side, Kakao Local keyword search) and `NEXT_PUBLIC_KAKAO_MAP_APP_KEY` (client-side, Kakao Maps JS SDK). Both come from the same Kakao Developers app (developers.kakao.com → 내 애플리케이션 → 앱 키); register `http://localhost:3000` under 플랫폼 설정 → Web.
 
+Optional `ML_SERVICE_URL` in `.env.local` (default `http://localhost:8000`) points `/symptom-check`'s photo-attach path at the local `ml-service` FastAPI server (see below) — only relevant when testing the skin-photo classification flow locally.
+
 ## Architecture
 
 Next.js App Router (canary), React 19, Tailwind v4, TypeScript. `@/*` path alias maps to repo root.
