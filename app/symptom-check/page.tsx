@@ -85,6 +85,10 @@ export default function SymptomCheckPage() {
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      setError("사진 용량이 너무 커요. 4MB 이하 사진을 선택해주세요.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setPhoto(reader.result as string);
     reader.readAsDataURL(file);
@@ -173,7 +177,7 @@ export default function SymptomCheckPage() {
           duration,
           severity,
           note,
-          photo,
+          photo: bodyPart === "피부" ? photo : null,
         }),
       });
       const data = await res.json();
