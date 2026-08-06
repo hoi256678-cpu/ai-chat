@@ -232,8 +232,21 @@ export default function SymptomCheckHistoryPage() {
                   ? "no-scrollbar flex snap-x snap-mandatory overflow-x-auto select-none [cursor:grabbing]"
                   : "no-scrollbar flex snap-x snap-mandatory overflow-x-auto [cursor:grab]"
               }
-              style={{ paddingLeft: "6%", paddingRight: "6%" }}
             >
+              {/* Leading spacer — NOT container padding, deliberately. Padding
+                  percentages resolve against the track's own outer width,
+                  while the card wrappers' width percentages resolve against
+                  the track's (padding-reduced) content box — nesting one
+                  inside the other compounds instead of adding up, so at the
+                  lg breakpoint the first/last card's centered position fell
+                  outside the scrollable range entirely and could never be
+                  reached. A spacer sized off the same basis as the cards
+                  (both direct flex children of the unpadded track) keeps the
+                  percentages simply summing to 100%. */}
+              <div
+                aria-hidden
+                className="w-[6%] shrink-0 sm:w-[15%] md:w-[22.5%] lg:w-[29%]"
+              />
               {records.map((record, index) => {
                 const active = index === activeIndex;
                 return (
@@ -290,6 +303,10 @@ export default function SymptomCheckHistoryPage() {
                   </div>
                 );
               })}
+              <div
+                aria-hidden
+                className="w-[6%] shrink-0 sm:w-[15%] md:w-[22.5%] lg:w-[29%]"
+              />
             </div>
 
             {records.length > 1 && (
