@@ -48,6 +48,11 @@ create table if not exists public.symptom_checks (
 alter table public.symptom_checks add column if not exists home_care text[] not null default '{}';
 alter table public.symptom_checks add column if not exists foods text[] not null default '{}';
 
+-- Added later: the attached photo (base64 data URL) for a 피부 check, shown
+-- on /symptom-check/history so past photos are browsable, not just the
+-- text result. Null for every check made without a photo.
+alter table public.symptom_checks add column if not exists photo text;
+
 create index if not exists symptom_checks_user_created_idx
   on public.symptom_checks (user_id, created_at desc);
 

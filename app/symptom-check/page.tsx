@@ -198,7 +198,8 @@ export default function SymptomCheckPage() {
           severity: severity ?? "",
           note,
         },
-        data as SymptomResult
+        data as SymptomResult,
+        bodyPart === "피부" ? photo : null
       ).catch((err) => console.error("증상체크 기록 저장 실패:", err));
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했어요.");
