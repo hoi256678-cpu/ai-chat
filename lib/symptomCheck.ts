@@ -25,7 +25,7 @@ export function buildSymptomPrompt(input: SymptomInput, classificationNote?: str
   const classificationSection = classificationNote
     ? `\n[AI 이미지 분류 결과 (참고용)]
 - 사용자가 첨부한 피부 사진을 로컬 딥러닝 모델이 분석한 결과: ${classificationNote}
-- 이 결과가 사용자가 보고한 증상과 일치하는지 검토하세요. 일치하면 안내에 반영하고, 불일치하는 듯하면 이를 명시적으로 언급하며 병원 방문을 권장하세요.
+- 이 결과가 사용자가 보고한 증상과 일치하는지 검토하세요. 일치하면 conditions 목록에 포함해도 됩니다. 불일치하는 듯하면 conditions 목록에는 넣지 말고, summary에서만 "AI 사진 분석에서는 OOO로 나왔으나 보고하신 증상과는 차이가 있어 참고만 하시라"는 식으로 짧게 언급하며 병원 방문을 권장하세요.
 - 확신도가 낮게 표기되어 있다면(60% 미만) 참고 정보로만 다루고 과신하지 마세요.
 - 이 모델은 akiec/bcc/df/vasc 4종 병변만 구분하도록 학습되어 '해당 없음'을 출력할 수 없습니다. 이 4종과 무관한 사진도 반드시 넷 중 하나로 분류되므로, 증상과 어긋나면 분류 결과를 배제하고 판단하세요.\n`
     : "";
