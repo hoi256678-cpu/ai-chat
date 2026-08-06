@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 
@@ -11,6 +12,20 @@ from model import EVAL_TRANSFORM, build_model
 DEFAULT_DATA_DIR = Path(__file__).parent / "data"
 DEFAULT_MODEL_OUTPUT = Path(__file__).parent / "skin_model.pth"
 DEFAULT_CLASSES_OUTPUT = Path(__file__).parent / "classes.json"
+
+
+def _evaluate(model: nn.Module, loader: DataLoader, device: str) -> float:
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    return correct / total if total else 0.0
 
 
 def train(
@@ -40,6 +55,9 @@ def train(
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
+    best_accuracy = -1.0
+    best_state = None
+
     for epoch in range(epochs):
         model.train()
         for images, labels in train_loader:
@@ -50,21 +68,15 @@ def train(
             loss.backward()
             optimizer.step()
 
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for images, labels in val_loader:
-                images, labels = images.to(resolved_device), labels.to(resolved_device)
-                outputs = model(images)
-                _, predicted = torch.max(outputs, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        accuracy = correct / total if total else 0.0
+        accuracy = _evaluate(model, val_loader, resolved_device)
         print(f"Epoch {epoch + 1}/{epochs} — val accuracy: {accuracy:.3f}")
 
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_state = copy.deepcopy(model.state_dict())
+
     model_output.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_output)
+    torch.save(best_state, model_output)
     classes_output.write_text(
         json.dumps(class_names, ensure_ascii=False, indent=2), encoding="utf-8"
     )

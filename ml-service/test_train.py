@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+import train as train_module
 from model import build_model
 from train import train
 
@@ -52,3 +54,36 @@ def test_train_produces_model_and_classes_file(tmp_path):
         dummy_input = torch.randn(1, 3, 224, 224)
         output = loaded_model(dummy_input)
     assert output.shape == (1, len(saved_classes))
+
+
+def test_train_saves_best_epoch_checkpoint_not_last(tmp_path, monkeypatch):
+    classes = ["아토피피부염", "여드름"]
+    make_fixture_dataset(tmp_path, classes)
+
+    model_output = tmp_path / "model.pth"
+    classes_output = tmp_path / "classes.json"
+
+    # Epoch 1 scores highest; epochs 2-3 score lower — a model that saves
+    # the last epoch instead of the best would save epoch 3's (worse) weights.
+    scripted_accuracies = iter([0.9, 0.5, 0.6])
+    captured_states = []
+
+    def fake_evaluate(model, loader, device):
+        captured_states.append(copy.deepcopy(model.state_dict()))
+        return next(scripted_accuracies)
+
+    monkeypatch.setattr(train_module, "_evaluate", fake_evaluate)
+
+    train(
+        data_dir=tmp_path,
+        model_output=model_output,
+        classes_output=classes_output,
+        epochs=3,
+        batch_size=2,
+        device="cpu",
+    )
+
+    saved_state = torch.load(model_output, map_location="cpu")
+    best_state = captured_states[0]
+    for key in best_state:
+        assert torch.equal(saved_state[key], best_state[key])

@@ -49,8 +49,13 @@ next-env.d.ts
 # ml-service (python)
 ml-service/.venv/
 ml-service/data/
+ml-service/organized/
+ml-service/ham_raw/
 ml-service/*.pth
 ml-service/classes.json
+ml-service/*.log
+ml-service/train_log*.txt
+ml-service/serve_log.txt
 ml-service/__pycache__/
 ml-service/**/__pycache__/
 .pytest_cache/
