@@ -64,24 +64,24 @@ export default function MainPage() {
             오늘은 어떤 이야기를 나눠볼까요?
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="mt-10 flex w-64 flex-col items-center gap-3">
             <button
               onClick={() => router.push("/chats")}
-              className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
+              className="w-full rounded-full bg-accent px-8 py-3.5 text-center text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
             >
               채팅 시작하기
             </button>
 
             <button
               onClick={() => router.push("/symptom-check")}
-              className="rounded-full border border-line bg-surface px-8 py-3.5 text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
+              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
             >
               증상 체크하기
             </button>
 
             <button
               onClick={() => router.push("/medications")}
-              className="rounded-full border border-line bg-surface px-8 py-3.5 text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
+              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
             >
               복용 알림
             </button>
