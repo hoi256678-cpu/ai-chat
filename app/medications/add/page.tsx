@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateKey } from "@/lib/chatHistory";
 import { saveMedication } from "@/lib/medications";
@@ -18,14 +18,16 @@ type PendingMed = {
   name: string;
   times: string[];
   endDate: string;
+  fromPhoto: boolean;
 };
 
-function createPending(name: string): PendingMed {
+function createPending(name: string, fromPhoto: boolean): PendingMed {
   return {
     key: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     name,
     times: [],
     endDate: "",
+    fromPhoto,
   };
 }
 
@@ -38,6 +40,13 @@ export default function AddMedicationPage() {
   const [pending, setPending] = useState<PendingMed[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -63,7 +72,7 @@ export default function AddMedicationPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "약 이름을 찾지 못했어요.");
-      setCandidates(data.names ?? []);
+      setCandidates([...new Set((data.names ?? []) as string[])]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "약 이름을 찾지 못했어요.");
     } finally {
@@ -75,7 +84,7 @@ export default function AddMedicationPage() {
     setPending((prev) => {
       const exists = prev.some((p) => p.name === name);
       if (exists) return prev.filter((p) => p.name !== name);
-      return [...prev, createPending(name)];
+      return [...prev, createPending(name, true)];
     });
   }
 
@@ -83,7 +92,7 @@ export default function AddMedicationPage() {
     const trimmed = manualName.trim();
     if (!trimmed) return;
     if (!pending.some((p) => p.name === trimmed)) {
-      setPending((prev) => [...prev, createPending(trimmed)]);
+      setPending((prev) => [...prev, createPending(trimmed, false)]);
     }
     setManualName("");
   }
@@ -119,7 +128,11 @@ export default function AddMedicationPage() {
       return;
     }
     const invalid = pending.some(
-      (p) => !p.name.trim() || p.times.length === 0 || !p.endDate
+      (p) =>
+        !p.name.trim() ||
+        p.times.length === 0 ||
+        p.times.some((t) => !t) ||
+        !p.endDate
     );
     if (invalid) {
       setError("모든 약에 이름, 복용 시간대, 종료일을 입력해주세요.");
@@ -135,7 +148,7 @@ export default function AddMedicationPage() {
           times: med.times,
           startDate: today,
           endDate: med.endDate,
-          photo: photo ?? null,
+          photo: med.fromPhoto ? photo : null,
         });
       } catch {
         failed.push(med);
@@ -336,9 +349,13 @@ export default function AddMedicationPage() {
                                   p.key === med.key
                                     ? {
                                         ...p,
-                                        times: p.times
-                                          .map((t) => (t === time ? newTime : t))
-                                          .sort(),
+                                        times: Array.from(
+                                          new Set(
+                                            p.times.map((t) =>
+                                              t === time ? newTime : t
+                                            )
+                                          )
+                                        ).sort(),
                                       }
                                     : p
                                 )
@@ -368,7 +385,11 @@ export default function AddMedicationPage() {
         )}
 
         {error && (
-          <p className="mt-4 text-center text-sm text-danger" role="alert">
+          <p
+            ref={errorRef}
+            className="mt-4 text-center text-sm text-danger"
+            role="alert"
+          >
             {error}
           </p>
         )}

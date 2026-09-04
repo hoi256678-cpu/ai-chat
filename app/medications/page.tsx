@@ -12,8 +12,6 @@ import {
   type MedicationLogRecord,
 } from "@/lib/medications";
 
-const today = formatDateKey(new Date());
-
 type Slot = {
   medicationId: string;
   name: string;
@@ -21,7 +19,7 @@ type Slot = {
   taken: boolean;
 };
 
-function dDay(endDate: string): string {
+function dDay(endDate: string, today: string): string {
   const diffDays = Math.round(
     (new Date(endDate).getTime() - new Date(today).getTime()) /
       (1000 * 60 * 60 * 24)
@@ -33,6 +31,7 @@ function dDay(endDate: string): string {
 
 export default function MedicationsPage() {
   const router = useRouter();
+  const today = formatDateKey(new Date());
   const [medications, setMedications] = useState<MedicationRecord[] | null>(null);
   const [logs, setLogs] = useState<MedicationLogRecord[]>([]);
   const [error, setError] = useState("");
@@ -44,9 +43,13 @@ export default function MedicationsPage() {
         setLogs(todayLogs);
       })
       .catch(() => setError("불러오지 못했어요."));
+    // fetch once on mount only; `today` is intentionally read fresh on each
+    // render (see stale date_key fix below) but must not re-trigger this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleCheck(medicationId: string, time: string) {
+    setError("");
     const optimisticId = `optimistic-${medicationId}-${time}`;
     setLogs((prev) => [
       ...prev,
@@ -67,6 +70,7 @@ export default function MedicationsPage() {
   }
 
   async function handleDelete(id: string) {
+    setError("");
     setMedications((prev) => (prev ?? []).filter((m) => m.id !== id));
     try {
       await deleteMedication(id);
@@ -200,7 +204,7 @@ export default function MedicationsPage() {
                     <div>
                       <p className="text-sm font-semibold text-ink">{med.name}</p>
                       <p className="text-xs text-sub">
-                        {med.times.join(", ")} · {dDay(med.endDate)}
+                        {med.times.join(", ")} · {dDay(med.endDate, today)}
                       </p>
                     </div>
                     <button

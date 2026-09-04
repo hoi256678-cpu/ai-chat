@@ -50,5 +50,7 @@ export const config = {
     "/chats/:path*",
     "/symptom-check/:path*",
     "/settings",
+    "/medications",
+    "/medications/:path*",
   ],
 };

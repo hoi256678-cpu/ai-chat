@@ -11,6 +11,10 @@ export async function POST(request: Request) {
     return Response.json({ error: "사진이 필요해요." }, { status: 400 });
   }
 
+  if (photo.length > 6_000_000) {
+    return Response.json({ error: "사진이 너무 커요." }, { status: 400 });
+  }
+
   try {
     const names = await extractMedicineNames(photo);
     return Response.json({ names });

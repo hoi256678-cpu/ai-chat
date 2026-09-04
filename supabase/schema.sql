@@ -183,3 +183,27 @@ create policy "select own medication logs"
 create policy "insert own medication logs"
   on public.medication_logs for insert
   with check (auth.uid() = user_id);
+
+-- Added later (final review): harden medication_logs insert to also verify
+-- the referenced medication belongs to the caller — the original policy
+-- only checked auth.uid() = user_id, which let a caller who learns another
+-- user's medication_id occupy that user's (medication_id, date_key, time)
+-- unique slot.
+drop policy if exists "insert own medication logs" on public.medication_logs;
+create policy "insert own medication logs"
+  on public.medication_logs for insert
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.medications m
+      where m.id = medication_id and m.user_id = auth.uid()
+    )
+  );
+
+alter table public.medications drop constraint if exists medications_end_after_start;
+alter table public.medications add constraint medications_end_after_start
+  check (end_date >= start_date);
+
+alter table public.medications drop constraint if exists medications_times_not_empty;
+alter table public.medications add constraint medications_times_not_empty
+  check (array_length(times, 1) > 0);

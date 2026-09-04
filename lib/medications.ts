@@ -8,7 +8,7 @@ export type MedicationInput = {
   photo?: string | null;
 };
 
-export type MedicationRecord = MedicationInput & {
+export type MedicationRecord = Omit<MedicationInput, "photo"> & {
   id: string;
   createdAt: string;
 };
@@ -38,7 +38,7 @@ export async function getMedications(): Promise<MedicationRecord[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("medications")
-    .select("id,name,times,start_date,end_date,photo,created_at")
+    .select("id,name,times,start_date,end_date,created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -49,7 +49,6 @@ export async function getMedications(): Promise<MedicationRecord[]> {
     times: row.times,
     startDate: row.start_date,
     endDate: row.end_date,
-    photo: row.photo ?? null,
     createdAt: row.created_at,
   }));
 }
