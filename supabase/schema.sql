@@ -130,3 +130,80 @@ alter table public.events add column if not exists end_date_key text;
 alter table public.events drop constraint if exists events_end_after_start;
 alter table public.events add constraint events_end_after_start
   check (end_date_key is null or end_date_key >= date_key);
+
+-- Added later: 복용 알림(투약 스케줄) — 등록된 약과 복용 시간대, 종료일.
+create table if not exists public.medications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  times text[] not null,        -- 예: ['08:00','13:00','19:00'], HH:MM 24시간제
+  start_date text not null,     -- "YYYY-MM-DD"
+  end_date text not null,       -- "YYYY-MM-DD"
+  photo text,                   -- 처방전 사진 base64 데이터 URL, 선택
+  created_at timestamptz not null default now()
+);
+
+create index if not exists medications_user_end_date_idx
+  on public.medications (user_id, end_date);
+
+alter table public.medications enable row level security;
+
+create policy "select own medications"
+  on public.medications for select
+  using (auth.uid() = user_id);
+
+create policy "insert own medications"
+  on public.medications for insert
+  with check (auth.uid() = user_id);
+
+create policy "delete own medications"
+  on public.medications for delete
+  using (auth.uid() = user_id);
+
+-- Added later: 복용 체크 기록 — 어느 약의 어느 날짜/시간대를 먹었다고 표시했는지.
+create table if not exists public.medication_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  medication_id uuid not null references public.medications(id) on delete cascade,
+  date_key text not null,
+  time text not null,
+  taken_at timestamptz not null default now(),
+  unique (medication_id, date_key, time)
+);
+
+create index if not exists medication_logs_user_medication_date_idx
+  on public.medication_logs (user_id, medication_id, date_key);
+
+alter table public.medication_logs enable row level security;
+
+create policy "select own medication logs"
+  on public.medication_logs for select
+  using (auth.uid() = user_id);
+
+create policy "insert own medication logs"
+  on public.medication_logs for insert
+  with check (auth.uid() = user_id);
+
+-- Added later (final review): harden medication_logs insert to also verify
+-- the referenced medication belongs to the caller — the original policy
+-- only checked auth.uid() = user_id, which let a caller who learns another
+-- user's medication_id occupy that user's (medication_id, date_key, time)
+-- unique slot.
+drop policy if exists "insert own medication logs" on public.medication_logs;
+create policy "insert own medication logs"
+  on public.medication_logs for insert
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.medications m
+      where m.id = medication_id and m.user_id = auth.uid()
+    )
+  );
+
+alter table public.medications drop constraint if exists medications_end_after_start;
+alter table public.medications add constraint medications_end_after_start
+  check (end_date >= start_date);
+
+alter table public.medications drop constraint if exists medications_times_not_empty;
+alter table public.medications add constraint medications_times_not_empty
+  check (array_length(times, 1) > 0);

@@ -51,32 +51,34 @@ export default function MainPage() {
         className="flex flex-1 flex-col items-center justify-center px-6"
         style={{ paddingBottom: "max(3rem, env(safe-area-inset-bottom))" }}
       >
-        <div
-          className="orb-mark orb-mark--hero mb-8 h-24 w-24"
-          aria-hidden
-        />
+        <div className="flex w-full max-w-sm flex-col items-center">
+          <div className="orb-mark orb-mark--hero mb-4 h-20 w-20" aria-hidden />
 
-        <h1 className="text-center text-2xl font-bold tracking-tight text-ink break-words">
-          안녕하세요, {displayName}님
-        </h1>
-        <p className="mt-2 text-center text-sm text-sub">
-          오늘은 어떤 이야기를 나눠볼까요?
-        </p>
+          <p className="font-display mb-1 text-center text-xs font-semibold tracking-tight text-sub">
+            HealthMate
+          </p>
+          <h1 className="text-center text-2xl font-bold tracking-tight text-ink break-words">
+            안녕하세요, {displayName}님
+          </h1>
+          <p className="mt-2 text-center text-sm text-sub">
+            오늘은 어떤 이야기를 나눠볼까요?
+          </p>
 
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <button
-            onClick={() => router.push("/chats")}
-            className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
-          >
-            채팅 시작하기
-          </button>
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <button
+              onClick={() => router.push("/chats")}
+              className="rounded-full bg-accent px-8 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
+            >
+              채팅 시작하기
+            </button>
 
-          <button
-            onClick={() => router.push("/symptom-check")}
-            className="rounded-full border border-line bg-surface px-8 py-3.5 text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
-          >
-            증상 체크하기
-          </button>
+            <button
+              onClick={() => router.push("/symptom-check")}
+              className="rounded-full border border-line bg-surface px-8 py-3.5 text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
+            >
+              증상 체크하기
+            </button>
+          </div>
         </div>
       </div>
     </main>

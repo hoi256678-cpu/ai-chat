@@ -46,6 +46,9 @@ next-env.d.ts
 # git worktrees (superpowers subagent-driven-development)
 .worktrees/
 
+# superpowers visual brainstorming companion
+.superpowers/
+
 # ml-service (python)
 ml-service/.venv/
 ml-service/data/
