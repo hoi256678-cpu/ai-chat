@@ -78,6 +78,13 @@ export default function MainPage() {
             >
               증상 체크하기
             </button>
+
+            <button
+              onClick={() => router.push("/medications")}
+              className="rounded-full border border-line bg-surface px-8 py-3.5 text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
+            >
+              복용 알림
+            </button>
           </div>
         </div>
       </div>
