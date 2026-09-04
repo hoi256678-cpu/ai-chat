@@ -7,6 +7,7 @@ import {
   type SymptomCheckRecord,
 } from "@/lib/symptomHistory";
 import { SymptomResultView } from "@/components/SymptomResultView";
+import { formatRelativeDate } from "@/lib/formatRelativeDate";
 
 // Shared by the live onScroll handler (keeps activeIndex in sync while the
 // user drags or swipes) and the explicit post-drag snap (see handleMouseUp)
@@ -62,28 +63,6 @@ function animateScrollTo(track: HTMLDivElement, target: number, duration = 280) 
     }
   }
   requestAnimationFrame(step);
-}
-
-function formatRelativeDate(iso: string) {
-  const date = new Date(iso);
-  const now = new Date();
-  const startOfDay = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const diffDays = Math.round(
-    (startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays === 0) {
-    const time = date.toLocaleString("ko-KR", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return `오늘 ${time}`;
-  }
-  if (diffDays === 1) return "어제";
-  if (diffDays > 1 && diffDays < 7) return `${diffDays}일 전`;
-  return date.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
 }
 
 export default function SymptomCheckHistoryPage() {
