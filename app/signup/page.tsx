@@ -72,7 +72,7 @@ export default function SignupPage() {
         <div className="orb-mark orb-mark--hero mb-6 h-16 w-16" aria-hidden />
 
         <h1 className="font-display mb-1 text-center text-lg font-semibold tracking-tight text-sub">
-          AI Chat
+          HealthMate
         </h1>
         <p className="mb-1 text-center text-2xl font-bold tracking-tight text-ink">
           환영해요, 시작해볼까요?

@@ -12,7 +12,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "AI Chat",
+  title: "HealthMate",
   description: "매일의 대화와 몸 상태를 편하게 기록하는 AI 다이어리",
 };
 
