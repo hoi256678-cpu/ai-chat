@@ -25,6 +25,76 @@ function dDay(endDate: string, today: string): string {
   return `D-${diffDays}`;
 }
 
+function TimeChips({ times, className = "" }: { times: string[]; className?: string }) {
+  return (
+    <div className={`flex flex-wrap gap-1.5 ${className}`}>
+      {times.map((time) => (
+        <span
+          key={time}
+          className="rounded-full bg-tint px-2.5 py-1 text-xs font-medium text-ink"
+        >
+          {time}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// AI 응답은 "안내 문장 + 불릿 3~5개 + 마지막 한 줄 면책 문구" 형태로 오도록 프롬프트가
+// 지시하고 있어(lib/gemini.ts getMedicationPrecautions) — 그 구조를 실제 목록으로
+// 파싱해서 보여준다. 예상과 다른 형식이 오면(불릿이 하나도 없으면) 문단만 나열.
+function PrecautionsView({ text }: { text: string | null }) {
+  if (!text) {
+    return <p className="text-sm leading-relaxed text-ink">주의사항 정보가 없어요.</p>;
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const bulletPattern = /^[-•*]\s+|^\d+[.)]\s+/;
+  const disclaimer = lines.length > 1 ? lines[lines.length - 1] : null;
+  const bodyLines = disclaimer ? lines.slice(0, -1) : lines;
+  const hasBullets = bodyLines.some((line) => bulletPattern.test(line));
+
+  if (!hasBullets) {
+    return (
+      <div className="flex flex-col gap-2">
+        {lines.map((line, i) => (
+          <p key={i} className="text-sm leading-relaxed text-ink">
+            {line}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {bodyLines
+        .filter((line) => !bulletPattern.test(line))
+        .map((line, i) => (
+          <p key={`intro-${i}`} className="text-sm leading-relaxed text-ink">
+            {line}
+          </p>
+        ))}
+      <ul className="flex flex-col gap-2">
+        {bodyLines
+          .filter((line) => bulletPattern.test(line))
+          .map((line, i) => (
+            <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink">
+              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
+              <span>{line.replace(bulletPattern, "")}</span>
+            </li>
+          ))}
+      </ul>
+      {disclaimer && (
+        <p className="text-xs leading-relaxed text-sub">{disclaimer}</p>
+      )}
+    </div>
+  );
+}
+
 export default function MedicationsPage() {
   const router = useRouter();
   const [today, setToday] = useState(() => formatDateKey(new Date()));
@@ -193,7 +263,7 @@ export default function MedicationsPage() {
                         {dDay(med.endDate, today)}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-sub">{med.times.join(" · ")}</p>
+                    <TimeChips times={med.times} className="mt-2" />
                     <p className="mt-4 line-clamp-5 flex-1 whitespace-pre-line text-sm leading-relaxed text-ink">
                       {med.precautions ?? "주의사항 정보가 없어요."}
                     </p>
@@ -207,8 +277,8 @@ export default function MedicationsPage() {
 
             {slots.length > 0 && (
               <section className="mt-8 px-5">
-                <h2 className="mb-2 text-xs font-semibold text-sub">오늘 먹어야 할 약</h2>
-                <div className="flex flex-col gap-2">
+                <h2 className="mb-3 text-sm font-semibold text-sub">오늘 먹어야 할 약</h2>
+                <div className="flex flex-col gap-2.5">
                   {slots.map((slot) => {
                     const due = !slot.taken && slot.time <= nowHHMM;
                     return (
@@ -220,23 +290,23 @@ export default function MedicationsPage() {
                         aria-pressed={slot.taken}
                         className={
                           slot.taken
-                            ? "flex w-full items-center justify-between rounded-2xl border border-line bg-tint px-4 py-3 text-left transition active:scale-[0.98]"
+                            ? "flex w-full items-center justify-between rounded-2xl border border-line bg-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
                             : due
-                              ? "flex w-full items-center justify-between rounded-2xl border-2 border-danger bg-danger-tint px-4 py-3 text-left transition active:scale-[0.98]"
-                              : "flex w-full items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3 text-left transition hover:border-accent/40 active:scale-[0.98]"
+                              ? "flex w-full items-center justify-between rounded-2xl border-2 border-danger bg-danger-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
+                              : "flex w-full items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition hover:border-accent/40 active:scale-[0.98]"
                         }
                       >
-                        <span>
+                        <span className="flex flex-col gap-0.5">
                           <span
                             className={
                               slot.taken
-                                ? "block text-sm font-semibold text-ink opacity-60"
-                                : "block text-sm font-semibold text-ink"
+                                ? "text-sm font-semibold leading-snug text-ink opacity-60"
+                                : "text-sm font-semibold leading-snug text-ink"
                             }
                           >
                             {slot.name}
                           </span>
-                          <span className="block text-xs text-sub">{slot.time}</span>
+                          <span className="text-xs leading-snug text-sub">{slot.time}</span>
                         </span>
                         <span
                           aria-hidden
@@ -313,17 +383,15 @@ export default function MedicationsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 pb-2">
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-6">
                 <div>
-                  <h2 className="mb-1 text-xs font-medium text-sub">복용 시간</h2>
-                  <p className="text-sm text-ink">{selected.times.join(", ")}</p>
+                  <h2 className="mb-2 text-sm font-semibold text-ink">복용 시간</h2>
+                  <TimeChips times={selected.times} />
                 </div>
 
                 <div>
-                  <h2 className="mb-1 text-xs font-medium text-sub">AI 복용 주의사항</h2>
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
-                    {selected.precautions ?? "주의사항 정보가 없어요."}
-                  </p>
+                  <h2 className="mb-2 text-sm font-semibold text-ink">AI 복용 주의사항</h2>
+                  <PrecautionsView text={selected.precautions} />
                 </div>
               </div>
             </div>
