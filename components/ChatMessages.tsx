@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import type { StoredMessage } from "@/lib/chatHistory";
+import { MarkdownMessage } from "@/components/MarkdownMessage";
 
 export function ChatMessages({
   messages,
@@ -47,7 +48,11 @@ export function ChatMessages({
                   : "max-w-[75%] rounded-2xl rounded-br-md bg-bubble-mine px-4 py-2.5 text-[15px] leading-relaxed text-ink"
               }
             >
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              {isAssistant ? (
+                <MarkdownMessage content={message.content} />
+              ) : (
+                <p className="whitespace-pre-wrap">{message.content}</p>
+              )}
             </div>
 
             {isLastInGroup && (
