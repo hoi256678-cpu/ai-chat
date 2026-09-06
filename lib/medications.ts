@@ -170,7 +170,7 @@ export function computeDoseSlots(
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 
-export async function getDueCount(): Promise<number> {
+export async function getDueSlots(): Promise<DoseSlot[]> {
   const today = formatDateKey(new Date());
   const [medications, logs] = await Promise.all([
     getMedications(),
@@ -180,5 +180,9 @@ export async function getDueCount(): Promise<number> {
 
   return computeDoseSlots(medications, logs, today).filter(
     (slot) => !slot.taken && slot.time <= nowHHMM
-  ).length;
+  );
+}
+
+export async function getDueCount(): Promise<number> {
+  return (await getDueSlots()).length;
 }

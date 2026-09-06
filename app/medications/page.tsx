@@ -225,7 +225,7 @@ export default function MedicationsPage() {
               />
             </svg>
           </button>
-          <h1 className="text-xl font-bold tracking-tight text-ink">복용/복약 알림</h1>
+          <h1 className="text-xl font-bold tracking-tight text-ink">복용/복약 관리</h1>
         </div>
         <button
           onClick={() => router.push("/medications/add")}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getDueCount } from "@/lib/medications";
+import { getDueSlots, type DoseSlot } from "@/lib/medications";
 
 export default function MainPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
-  const [dueCount, setDueCount] = useState(0);
+  const [dueSlots, setDueSlots] = useState<DoseSlot[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   // proxy.ts already guarantees this page is only reached when
   // authenticated — this just fetches the name to display it.
@@ -21,10 +23,21 @@ export default function MainPage() {
       const nickname = data.user?.user_metadata?.nickname;
       setDisplayName(nickname || data.user?.email?.split("@")[0] || "");
     });
-    getDueCount()
-      .then(setDueCount)
+    getDueSlots()
+      .then(setDueSlots)
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    function handleOutsideClick(event: MouseEvent) {
+      if (!notificationsRef.current?.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showNotifications]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -38,31 +51,61 @@ export default function MainPage() {
         className="flex items-center justify-end gap-1 px-4"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
-        <button
-          onClick={() => router.push("/medications")}
-          aria-label="복용/복약 알림"
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M6 8a6 6 0 0 1 12 0c0 3.2 1 5 1.8 6.2a1 1 0 0 1-.8 1.6H5a1 1 0 0 1-.8-1.6C5 13 6 11.2 6 8Z"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M9.5 18.5a2.5 2.5 0 0 0 5 0"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-            />
-          </svg>
-          {dueCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
-              {dueCount > 9 ? "9+" : dueCount}
-            </span>
+        <div className="relative" ref={notificationsRef}>
+          <button
+            onClick={() => setShowNotifications((prev) => !prev)}
+            aria-label="복용/복약 알림"
+            aria-expanded={showNotifications}
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6 8a6 6 0 0 1 12 0c0 3.2 1 5 1.8 6.2a1 1 0 0 1-.8 1.6H5a1 1 0 0 1-.8-1.6C5 13 6 11.2 6 8Z"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M9.5 18.5a2.5 2.5 0 0 0 5 0"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+            {dueSlots.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                {dueSlots.length > 9 ? "9+" : dueSlots.length}
+              </span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 top-11 z-50 w-72 rounded-2xl border border-line bg-surface p-2 shadow-[0_12px_28px_-12px_rgba(22,33,44,0.3)]">
+              {dueSlots.length === 0 ? (
+                <p className="px-3 py-4 text-center text-sm text-sub">
+                  아직 복용/복약 알림이 없어요.
+                </p>
+              ) : (
+                <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
+                  {dueSlots.map((slot) => (
+                    <button
+                      key={`${slot.medicationId}-${slot.time}`}
+                      onClick={() => {
+                        setShowNotifications(false);
+                        router.push("/medications");
+                      }}
+                      className="rounded-xl px-3 py-2.5 text-left text-sm text-ink transition hover:bg-tint"
+                    >
+                      <span className="font-semibold">{slot.name}</span> 복용/복약
+                      시간이에요
+                      <span className="ml-1.5 text-xs text-sub">{slot.time}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
-        </button>
+        </div>
         <button
           onClick={() => router.push("/settings")}
           className="rounded-full px-3 py-2.5 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
