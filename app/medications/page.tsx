@@ -13,6 +13,7 @@ import {
   type MedicationRecord,
   type MedicationLogRecord,
 } from "@/lib/medications";
+import { CardDeck } from "@/components/CardDeck";
 
 function dDay(endDate: string, today: string): string {
   const diffDays = Math.round(
@@ -30,7 +31,7 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<MedicationRecord[] | null>(null);
   const [logs, setLogs] = useState<MedicationLogRecord[]>([]);
   const [error, setError] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<MedicationRecord | null>(null);
 
   useEffect(() => {
     getMedications()
@@ -95,6 +96,7 @@ export default function MedicationsPage() {
 
   async function handleDelete(id: string) {
     setError("");
+    setSelected(null);
     setMedications((prev) => (prev ?? []).filter((m) => m.id !== id));
     try {
       await deleteMedication(id);
@@ -144,21 +146,21 @@ export default function MedicationsPage() {
       </header>
 
       <div
-        className="flex-1 overflow-y-auto px-5 pb-6"
+        className="flex flex-1 flex-col overflow-y-auto pb-6"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
         {error && (
-          <p className="mb-4 text-center text-sm text-danger" role="alert">
+          <p className="mb-4 px-5 text-center text-sm text-danger" role="alert">
             {error}
           </p>
         )}
 
         {medications === null && (
-          <p className="pt-10 text-center text-sm text-sub">불러오는 중…</p>
+          <p className="px-5 pt-10 text-center text-sm text-sub">불러오는 중…</p>
         )}
 
         {medications !== null && medications.length === 0 && (
-          <div className="mt-6 rounded-2xl border border-dashed border-line px-4 py-8 text-center">
+          <div className="mx-5 mt-6 rounded-2xl border border-dashed border-line px-4 py-8 text-center">
             <p className="text-sm text-sub">아직 등록된 약이 없어요.</p>
             <button
               onClick={() => router.push("/medications/add")}
@@ -171,9 +173,41 @@ export default function MedicationsPage() {
 
         {medications !== null && medications.length > 0 && (
           <>
+            <section className="mt-2">
+              <CardDeck
+                items={medications}
+                getKey={(med) => med.id}
+                onSelect={setSelected}
+                cardClassName={(active) =>
+                  active
+                    ? "flex h-[22rem] w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300"
+                    : "flex h-[22rem] w-full shrink-0 scale-90 flex-col rounded-[2rem] border border-line bg-surface p-7 text-left opacity-40 shadow-none transition-all duration-300"
+                }
+                renderCard={(med) => (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xl font-bold text-ink sm:text-2xl">
+                        {med.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-sub sm:text-sm">
+                        {dDay(med.endDate, today)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-sub">{med.times.join(" · ")}</p>
+                    <p className="mt-4 line-clamp-5 flex-1 whitespace-pre-line text-sm leading-relaxed text-ink">
+                      {med.precautions ?? "주의사항 정보가 없어요."}
+                    </p>
+                    <p className="text-sm font-medium text-accent">
+                      눌러서 자세히 보기 →
+                    </p>
+                  </>
+                )}
+              />
+            </section>
+
             {slots.length > 0 && (
-              <section className="mt-2">
-                <h2 className="mb-2 text-xs font-semibold text-sub">오늘</h2>
+              <section className="mt-8 px-5">
+                <h2 className="mb-2 text-xs font-semibold text-sub">오늘 먹어야 할 약</h2>
                 <div className="flex flex-col gap-2">
                   {slots.map((slot) => {
                     const due = !slot.taken && slot.time <= nowHHMM;
@@ -230,72 +264,72 @@ export default function MedicationsPage() {
                 </div>
               </section>
             )}
-
-            <section className="mt-8">
-              <h2 className="mb-2 text-xs font-semibold text-sub">등록된 약</h2>
-              <div className="flex flex-col gap-2">
-                {medications.map((med) => {
-                  const expanded = expandedId === med.id;
-                  return (
-                    <div
-                      key={med.id}
-                      className="rounded-2xl border border-line bg-surface"
-                    >
-                      <div className="flex items-center justify-between px-4 py-3">
-                        <button
-                          onClick={() => setExpandedId(expanded ? null : med.id)}
-                          aria-expanded={expanded}
-                          className="flex flex-1 items-center justify-between gap-2 text-left"
-                        >
-                          <span>
-                            <span className="block text-sm font-semibold text-ink">
-                              {med.name}
-                            </span>
-                            <span className="block text-xs text-sub">
-                              {med.times.join(", ")} · {dDay(med.endDate, today)}
-                            </span>
-                          </span>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className={`shrink-0 text-sub transition-transform ${
-                              expanded ? "rotate-180" : ""
-                            }`}
-                          >
-                            <path
-                              d="M6 9l6 6 6-6"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(med.id)}
-                          aria-label={`${med.name} 삭제`}
-                          className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      {expanded && (
-                        <div className="border-t border-line px-4 py-3">
-                          <p className="whitespace-pre-line text-xs text-sub">
-                            {med.precautions ?? "주의사항 정보가 없어요."}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
           </>
         )}
       </div>
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <button
+            aria-label="닫기"
+            className="sheet-backdrop-in absolute inset-0 bg-ink/40"
+            onClick={() => setSelected(null)}
+          />
+          <div
+            className="sheet-rise-in relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
+            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="shrink-0 px-5 pt-5">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" aria-hidden />
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-ink">
+                  {selected.name} · {dDay(selected.endDate, today)}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => handleDelete(selected.id)}
+                    aria-label={`${selected.name} 삭제`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    aria-label="닫기"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 pb-2">
+              <div className="flex flex-col gap-5">
+                <div>
+                  <h2 className="mb-1 text-xs font-medium text-sub">복용 시간</h2>
+                  <p className="text-sm text-ink">{selected.times.join(", ")}</p>
+                </div>
+
+                <div>
+                  <h2 className="mb-1 text-xs font-medium text-sub">AI 복용 주의사항</h2>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
+                    {selected.precautions ?? "주의사항 정보가 없어요."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -96,7 +96,7 @@ export default function MainPage() {
 
           <div className="mt-10 flex w-64 flex-col items-center gap-3">
             <button
-              onClick={() => router.push("/chats")}
+              onClick={() => router.push("/chat")}
               className="w-full rounded-full bg-accent px-8 py-3.5 text-center text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
             >
               채팅 시작하기
@@ -113,7 +113,14 @@ export default function MainPage() {
               onClick={() => router.push("/medications")}
               className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
             >
-              복용/복약 알림
+              복용/복약관리
+            </button>
+
+            <button
+              onClick={() => router.push("/chats")}
+              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
+            >
+              캘린더
             </button>
           </div>
         </div>

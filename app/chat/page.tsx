@@ -110,7 +110,26 @@ export default function ChatRoomPage() {
           </svg>
         </button>
         <div className="orb-mark h-8 w-8 shrink-0" aria-hidden />
-        <span className="truncate font-semibold text-ink">AI 어시스턴트</span>
+        <span className="flex-1 truncate font-semibold text-ink">AI 어시스턴트</span>
+        <button
+          onClick={() => router.push("/chats")}
+          aria-label="캘린더로 이동"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="4"
+              y="5"
+              width="16"
+              height="15"
+              rx="2"
+              stroke="currentColor"
+              strokeWidth="1.7"
+            />
+            <path d="M4 9h16" stroke="currentColor" strokeWidth="1.7" />
+            <path d="M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6">

@@ -6,6 +6,15 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDateKey, getDatesWithHistory, todayKey } from "@/lib/chatHistory";
 import { MOOD_OPTIONS, getMoods, moodEmoji, setDayMood, type MoodKey } from "@/lib/moods";
 import { addEvent, deleteEvent, getAllEvents, type CalendarEvent } from "@/lib/events";
+import {
+  getMedications,
+  getDoseLogs,
+  logDose,
+  unlogDose,
+  computeDoseSlots,
+  type MedicationRecord,
+  type MedicationLogRecord,
+} from "@/lib/medications";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const LANE_HEIGHT = 26; // px — vertical slot per bar/pill row inside a week
@@ -189,13 +198,16 @@ export default function CalendarPage() {
   const [showRangePopup, setShowRangePopup] = useState(false);
   const [panelBusy, setPanelBusy] = useState(false);
   const [panelError, setPanelError] = useState("");
+  const [medications, setMedications] = useState<MedicationRecord[]>([]);
+  const [selectedDoseLogs, setSelectedDoseLogs] = useState<MedicationLogRecord[]>([]);
 
   useEffect(() => {
-    Promise.all([getDatesWithHistory(), getMoods(), getAllEvents()]).then(
-      ([dates, moodMap, eventMap]) => {
+    Promise.all([getDatesWithHistory(), getMoods(), getAllEvents(), getMedications()]).then(
+      ([dates, moodMap, eventMap, meds]) => {
         setHistoryDates(new Set(dates));
         setMoods(moodMap);
         setEvents(eventMap);
+        setMedications(meds);
         setReady(true);
       }
     );
@@ -239,6 +251,52 @@ export default function CalendarPage() {
     setRangeViewMonth(startOfMonth(date));
     setShowRangePopup(false);
     setPanelError("");
+    setSelectedDoseLogs([]);
+    getDoseLogs(key)
+      .then(setSelectedDoseLogs)
+      .catch(() => setPanelError("복용 기록을 불러오지 못했어요."));
+  }
+
+  async function handleDoseToggle(
+    dateKey: string,
+    medicationId: string,
+    time: string,
+    taken: boolean
+  ) {
+    setPanelError("");
+    if (taken) {
+      const previous = selectedDoseLogs.find(
+        (l) => l.medicationId === medicationId && l.time === time
+      );
+      setSelectedDoseLogs((prev) =>
+        prev.filter((l) => !(l.medicationId === medicationId && l.time === time))
+      );
+      try {
+        await unlogDose(medicationId, dateKey, time);
+      } catch {
+        if (previous) setSelectedDoseLogs((prev) => [...prev, previous]);
+        setPanelError("체크 해제에 실패했어요. 다시 시도해주세요.");
+      }
+      return;
+    }
+
+    const optimisticId = `optimistic-${medicationId}-${time}`;
+    setSelectedDoseLogs((prev) => [
+      ...prev,
+      {
+        id: optimisticId,
+        medicationId,
+        dateKey,
+        time,
+        takenAt: new Date().toISOString(),
+      },
+    ]);
+    try {
+      await logDose(medicationId, dateKey, time);
+    } catch {
+      setSelectedDoseLogs((prev) => prev.filter((l) => l.id !== optimisticId));
+      setPanelError("체크에 실패했어요. 다시 시도해주세요.");
+    }
   }
 
   async function handleMoodSelect(dateKey: string, mood: MoodKey) {
@@ -327,6 +385,14 @@ export default function CalendarPage() {
           return event.dateKey <= selectedKey && selectedKey <= end;
         })
     : [];
+
+  const selectedActiveMedications = selectedKey
+    ? medications.filter((m) => m.startDate <= selectedKey && selectedKey <= m.endDate)
+    : [];
+  const selectedDoseSlots = selectedKey
+    ? computeDoseSlots(selectedActiveMedications, selectedDoseLogs, selectedKey)
+    : [];
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-bg">
@@ -540,6 +606,66 @@ export default function CalendarPage() {
                       >
                         <span>{option.emoji}</span>
                         <span>{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedDoseSlots.length > 0 && (
+              <div className="mb-5">
+                <p className="mb-2 text-xs font-medium text-sub">복용/복약</p>
+                <div className="flex flex-col gap-1.5">
+                  {selectedDoseSlots.map((slot) => {
+                    const due =
+                      selectedKey === chatTodayKey &&
+                      !slot.taken &&
+                      slot.time <= nowHHMM;
+                    return (
+                      <button
+                        key={`${slot.medicationId}-${slot.time}`}
+                        onClick={() =>
+                          handleDoseToggle(
+                            selectedKey,
+                            slot.medicationId,
+                            slot.time,
+                            slot.taken
+                          )
+                        }
+                        aria-pressed={slot.taken}
+                        className={
+                          slot.taken
+                            ? "flex items-center justify-between rounded-md border-l-2 border-line bg-tint px-3 py-2 text-sm text-ink transition"
+                            : due
+                              ? "flex items-center justify-between rounded-md border-l-2 border-danger bg-danger-tint px-3 py-2 text-sm text-ink transition"
+                              : "flex items-center justify-between rounded-md border-l-2 border-accent/60 bg-surface px-3 py-2 text-sm text-ink transition hover:bg-tint/70"
+                        }
+                      >
+                        <span className={slot.taken ? "opacity-60" : ""}>
+                          {slot.name}
+                          <span className="ml-1.5 text-xs text-sub">{slot.time}</span>
+                        </span>
+                        <span
+                          aria-hidden
+                          className={
+                            slot.taken
+                              ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent text-white"
+                              : "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-line"
+                          }
+                        >
+                          {slot.taken && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                              <path
+                                d="M5 13l4 4L19 7"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </span>
                       </button>
                     );
                   })}
