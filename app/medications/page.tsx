@@ -231,7 +231,7 @@ export default function MedicationsPage() {
           onClick={() => router.push("/medications/add")}
           className="rounded-full bg-accent px-3 py-2 text-xs font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98]"
         >
-          + 약 추가
+          + 약 추가하기
         </button>
       </header>
 
@@ -251,7 +251,7 @@ export default function MedicationsPage() {
 
         {medications !== null && medications.length === 0 && (
           <div className="mx-5 mt-6 rounded-2xl border border-dashed border-line px-4 py-8 text-center">
-            <p className="text-sm text-sub">아직 등록된 약이 없어요.</p>
+            <p className="text-sm text-sub">아직 복용 중인 약이 없어요.</p>
             <button
               onClick={() => router.push("/medications/add")}
               className="mt-3 text-sm font-medium text-accent"

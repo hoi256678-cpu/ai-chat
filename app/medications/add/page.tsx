@@ -249,7 +249,7 @@ export default function AddMedicationPage() {
       >
         <section>
           <h2 className="mb-2.5 text-sm font-semibold text-sub">
-            처방전/진단서 사진 (선택)
+            처방전 사진 첨부하기 (선택)
           </h2>
           {!photo ? (
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line px-4 py-3.5 text-sm font-medium text-sub transition hover:border-accent/40">
@@ -262,7 +262,7 @@ export default function AddMedicationPage() {
                 />
                 <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.7" />
               </svg>
-              사진 첨부
+              사진 첨부하기
               <input
                 type="file"
                 accept="image/*"
@@ -324,7 +324,7 @@ export default function AddMedicationPage() {
         </section>
 
         <section className="mt-6">
-          <h2 className="mb-2.5 text-sm font-semibold text-sub">약 이름 직접 추가</h2>
+          <h2 className="mb-2.5 text-sm font-semibold text-sub">약 이름 직접 입력하기</h2>
           <div className="flex gap-2">
             <input
               value={manualName}
@@ -349,7 +349,7 @@ export default function AddMedicationPage() {
 
         {pending.length > 0 && (
           <section className="mt-6">
-            <h2 className="mb-2.5 text-sm font-semibold text-sub">등록 예정 목록</h2>
+            <h2 className="mb-2.5 text-sm font-semibold text-sub">등록할 약 목록</h2>
             <div className="flex flex-col gap-3">
               {pending.map((med) => (
                 <div
