@@ -31,21 +31,31 @@ function dDay(endDate: string, today: string): string {
 
 export default function MedicationsPage() {
   const router = useRouter();
-  const today = formatDateKey(new Date());
+  const [today, setToday] = useState(() => formatDateKey(new Date()));
   const [medications, setMedications] = useState<MedicationRecord[] | null>(null);
   const [logs, setLogs] = useState<MedicationLogRecord[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getMedications(), getDoseLogs(today)])
-      .then(([meds, todayLogs]) => {
-        setMedications(meds);
-        setLogs(todayLogs);
-      })
+    getMedications()
+      .then(setMedications)
       .catch(() => setError("불러오지 못했어요."));
-    // fetch once on mount only; `today` is intentionally read fresh on each
-    // render (see stale date_key fix below) but must not re-trigger this.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    getDoseLogs(today)
+      .then(setLogs)
+      .catch(() => setError("불러오지 못했어요."));
+  }, [today]);
+
+  useEffect(() => {
+    // 탭을 자정 너머로 계속 열어두면 today가 바뀌는데, 그걸 감지해서
+    // 위 getDoseLogs 재조회를 트리거하기 위한 타이머 (30초 간격이면 충분).
+    const id = setInterval(() => {
+      const now = formatDateKey(new Date());
+      setToday((prev) => (prev === now ? prev : now));
+    }, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   async function handleCheck(medicationId: string, time: string) {
@@ -91,7 +101,9 @@ export default function MedicationsPage() {
         medicationId: m.id,
         name: m.name,
         time,
-        taken: logs.some((l) => l.medicationId === m.id && l.time === time),
+        taken: logs.some(
+          (l) => l.medicationId === m.id && l.time === time && l.dateKey === today
+        ),
       }))
     )
     .sort((a, b) => a.time.localeCompare(b.time));
