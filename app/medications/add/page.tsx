@@ -227,7 +227,7 @@ export default function AddMedicationPage() {
       >
         <button
           onClick={() => router.push("/medications")}
-          aria-label="복용/복약 알림으로 돌아가기"
+          aria-label="복용/복약 관리로 돌아가기"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

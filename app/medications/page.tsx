@@ -7,6 +7,7 @@ import {
   getMedications,
   getDoseLogs,
   deleteMedication,
+  updateMedicationTimes,
   logDose,
   unlogDose,
   computeDoseSlots,
@@ -14,106 +15,7 @@ import {
   type MedicationLogRecord,
 } from "@/lib/medications";
 import { CardDeck } from "@/components/CardDeck";
-
-function dDay(endDate: string, today: string): string {
-  const diffDays = Math.round(
-    (new Date(endDate).getTime() - new Date(today).getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
-  if (diffDays < 0) return "종료됨";
-  if (diffDays === 0) return "오늘까지";
-  return `D-${diffDays}`;
-}
-
-function TimeChips({ times, className = "" }: { times: string[]; className?: string }) {
-  return (
-    <div className={`flex flex-wrap gap-1.5 ${className}`}>
-      {times.map((time) => (
-        <span
-          key={time}
-          className="rounded-full bg-tint px-2.5 py-1 text-xs font-medium text-ink"
-        >
-          {time}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// 불릿 각각이 보통 "투여 주의사항: ..." / "**흔한 부작용**: ..." 처럼 짧은 소제목 +
-// 콜론으로 시작한다 — 그 소제목만 굵게 뽑아내서 본문과 시각적으로 구분한다.
-function splitBulletLabel(text: string): { label: string | null; rest: string } {
-  const bold = text.match(/^\*\*(.+?)\*\*\s*[:：]\s*(.+)$/);
-  if (bold) return { label: bold[1], rest: bold[2] };
-
-  const plain = text.match(/^([^:：]{1,20})[:：]\s*(.+)$/);
-  if (plain) return { label: plain[1], rest: plain[2] };
-
-  return { label: null, rest: text };
-}
-
-// AI 응답은 "안내 문장 + 불릿 3~5개 + 마지막 한 줄 면책 문구" 형태로 오도록 프롬프트가
-// 지시하고 있어(lib/gemini.ts getMedicationPrecautions) — 그 구조를 실제 목록으로
-// 파싱해서 보여준다. 예상과 다른 형식이 오면(불릿이 하나도 없으면) 문단만 나열.
-function PrecautionsView({ text }: { text: string | null }) {
-  if (!text) {
-    return <p className="text-sm leading-relaxed text-ink">주의사항 정보가 없어요.</p>;
-  }
-
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const bulletPattern = /^[-•*]\s+|^\d+[.)]\s+/;
-  const disclaimer = lines.length > 1 ? lines[lines.length - 1] : null;
-  const bodyLines = disclaimer ? lines.slice(0, -1) : lines;
-  const hasBullets = bodyLines.some((line) => bulletPattern.test(line));
-
-  if (!hasBullets) {
-    return (
-      <div className="flex flex-col gap-2">
-        {lines.map((line, i) => (
-          <p key={i} className="text-sm leading-relaxed text-ink">
-            {line}
-          </p>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      {bodyLines
-        .filter((line) => !bulletPattern.test(line))
-        .map((line, i) => (
-          <p key={`intro-${i}`} className="text-sm leading-relaxed text-ink">
-            {line}
-          </p>
-        ))}
-      <ul className="flex flex-col gap-3">
-        {bodyLines
-          .filter((line) => bulletPattern.test(line))
-          .map((line, i) => {
-            const { label, rest } = splitBulletLabel(line.replace(bulletPattern, ""));
-            return (
-              <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
-                <span>
-                  {label && (
-                    <span className="block font-semibold text-ink">{label}</span>
-                  )}
-                  {rest}
-                </span>
-              </li>
-            );
-          })}
-      </ul>
-      {disclaimer && (
-        <p className="text-xs leading-relaxed text-sub">{disclaimer}</p>
-      )}
-    </div>
-  );
-}
+import { MedicationDetailSheet, TimeChips, dDay } from "@/components/MedicationDetailSheet";
 
 export default function MedicationsPage() {
   const router = useRouter();
@@ -195,6 +97,12 @@ export default function MedicationsPage() {
     }
   }
 
+  async function handleSaveTimes(id: string, times: string[]) {
+    await updateMedicationTimes(id, times);
+    setMedications((prev) => (prev ?? []).map((m) => (m.id === id ? { ...m, times } : m)));
+    setSelected((prev) => (prev && prev.id === id ? { ...prev, times } : prev));
+  }
+
   const activeMedications = (medications ?? []).filter(
     (m) => m.startDate <= today && today <= m.endDate
   );
@@ -225,7 +133,7 @@ export default function MedicationsPage() {
               />
             </svg>
           </button>
-          <h1 className="text-xl font-bold tracking-tight text-ink">복용/복약 알림</h1>
+          <h1 className="text-xl font-bold tracking-tight text-ink">복용/복약 관리</h1>
         </div>
         <button
           onClick={() => router.push("/medications/add")}
@@ -359,64 +267,14 @@ export default function MedicationsPage() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <button
-            aria-label="닫기"
-            className="sheet-backdrop-in absolute inset-0 bg-ink/40"
-            onClick={() => setSelected(null)}
-          />
-          <div
-            className="sheet-rise-in relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
-            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
-          >
-            <div className="shrink-0 px-5 pt-5">
-              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" aria-hidden />
-              <div className="mb-4 flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-ink">
-                  {selected.name} · {dDay(selected.endDate, today)}
-                </span>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    aria-label={`${selected.name} 삭제`}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setSelected(null)}
-                    aria-label="닫기"
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 pb-2">
-              <div className="flex flex-col gap-6">
-                <div>
-                  <h2 className="mb-2 text-sm font-semibold text-ink">복용 시간</h2>
-                  <TimeChips times={selected.times} />
-                </div>
-
-                <div>
-                  <h2 className="mb-2 text-sm font-semibold text-ink">AI 복용 주의사항</h2>
-                  <PrecautionsView text={selected.precautions} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MedicationDetailSheet
+          key={selected.id}
+          medication={selected}
+          today={today}
+          onClose={() => setSelected(null)}
+          onDelete={handleDelete}
+          onSaveTimes={handleSaveTimes}
+        />
       )}
     </main>
   );

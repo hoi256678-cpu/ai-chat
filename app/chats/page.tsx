@@ -9,12 +9,15 @@ import { addEvent, deleteEvent, getAllEvents, type CalendarEvent } from "@/lib/e
 import {
   getMedications,
   getDoseLogs,
+  deleteMedication,
+  updateMedicationTimes,
   logDose,
   unlogDose,
   computeDoseSlots,
   type MedicationRecord,
   type MedicationLogRecord,
 } from "@/lib/medications";
+import { MedicationDetailSheet } from "@/components/MedicationDetailSheet";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const LANE_HEIGHT = 26; // px — vertical slot per bar/pill row inside a week
@@ -189,10 +192,12 @@ export default function CalendarPage() {
   const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
   const [moods, setMoods] = useState<Map<string, MoodKey>>(new Map());
   const [events, setEvents] = useState<Map<string, CalendarEvent[]>>(new Map());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // 캘린더에 들어오면 오늘 날짜가 바로 선택된 채로 시작 — 날짜를 눌러야만
+  // 당일 기분/복용/일정 패널이 보이던 걸, 열자마자 보이게.
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
   const [newEventTitle, setNewEventTitle] = useState("");
   const [eventKind, setEventKind] = useState<"single" | "period" | null>(null);
-  const [rangeStart, setRangeStart] = useState("");
+  const [rangeStart, setRangeStart] = useState(() => formatDateKey(new Date()));
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [rangeViewMonth, setRangeViewMonth] = useState(() => startOfMonth(new Date()));
   const [showRangePopup, setShowRangePopup] = useState(false);
@@ -200,17 +205,26 @@ export default function CalendarPage() {
   const [panelError, setPanelError] = useState("");
   const [medications, setMedications] = useState<MedicationRecord[]>([]);
   const [selectedDoseLogs, setSelectedDoseLogs] = useState<MedicationLogRecord[]>([]);
+  const [selectedMedication, setSelectedMedication] = useState<MedicationRecord | null>(
+    null
+  );
 
   useEffect(() => {
-    Promise.all([getDatesWithHistory(), getMoods(), getAllEvents(), getMedications()]).then(
-      ([dates, moodMap, eventMap, meds]) => {
-        setHistoryDates(new Set(dates));
-        setMoods(moodMap);
-        setEvents(eventMap);
-        setMedications(meds);
-        setReady(true);
-      }
-    );
+    const todayKeyForLogs = formatDateKey(new Date());
+    Promise.all([
+      getDatesWithHistory(),
+      getMoods(),
+      getAllEvents(),
+      getMedications(),
+      getDoseLogs(todayKeyForLogs),
+    ]).then(([dates, moodMap, eventMap, meds, doseLogs]) => {
+      setHistoryDates(new Set(dates));
+      setMoods(moodMap);
+      setEvents(eventMap);
+      setMedications(meds);
+      setSelectedDoseLogs(doseLogs);
+      setReady(true);
+    });
   }, []);
 
   async function handleLogout() {
@@ -297,6 +311,23 @@ export default function CalendarPage() {
       setSelectedDoseLogs((prev) => prev.filter((l) => l.id !== optimisticId));
       setPanelError("체크에 실패했어요. 다시 시도해주세요.");
     }
+  }
+
+  async function handleDeleteMedication(id: string) {
+    setPanelError("");
+    setSelectedMedication(null);
+    setMedications((prev) => prev.filter((m) => m.id !== id));
+    try {
+      await deleteMedication(id);
+    } catch {
+      setPanelError("삭제에 실패했어요. 새로고침 후 다시 시도해주세요.");
+    }
+  }
+
+  async function handleSaveMedicationTimes(id: string, times: string[]) {
+    await updateMedicationTimes(id, times);
+    setMedications((prev) => prev.map((m) => (m.id === id ? { ...m, times } : m)));
+    setSelectedMedication((prev) => (prev && prev.id === id ? { ...prev, times } : prev));
   }
 
   async function handleMoodSelect(dateKey: string, mood: MoodKey) {
@@ -623,17 +654,8 @@ export default function CalendarPage() {
                       !slot.taken &&
                       slot.time <= nowHHMM;
                     return (
-                      <button
+                      <div
                         key={`${slot.medicationId}-${slot.time}`}
-                        onClick={() =>
-                          handleDoseToggle(
-                            selectedKey,
-                            slot.medicationId,
-                            slot.time,
-                            slot.taken
-                          )
-                        }
-                        aria-pressed={slot.taken}
                         className={
                           slot.taken
                             ? "flex items-center justify-between rounded-md border-l-2 border-line bg-tint px-3 py-2 text-sm text-ink transition"
@@ -642,12 +664,29 @@ export default function CalendarPage() {
                               : "flex items-center justify-between rounded-md border-l-2 border-accent/60 bg-surface px-3 py-2 text-sm text-ink transition hover:bg-tint/70"
                         }
                       >
-                        <span className={slot.taken ? "opacity-60" : ""}>
-                          {slot.name}
-                          <span className="ml-1.5 text-xs text-sub">{slot.time}</span>
-                        </span>
-                        <span
-                          aria-hidden
+                        <button
+                          onClick={() => {
+                            const med = medications.find((m) => m.id === slot.medicationId);
+                            if (med) setSelectedMedication(med);
+                          }}
+                          className="flex-1 text-left"
+                        >
+                          <span className={slot.taken ? "opacity-60" : ""}>
+                            {slot.name}
+                            <span className="ml-1.5 text-xs text-sub">{slot.time}</span>
+                          </span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDoseToggle(
+                              selectedKey,
+                              slot.medicationId,
+                              slot.time,
+                              slot.taken
+                            )
+                          }
+                          aria-pressed={slot.taken}
+                          aria-label={`${slot.name} ${slot.time} 복용 체크`}
                           className={
                             slot.taken
                               ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent text-white"
@@ -665,8 +704,8 @@ export default function CalendarPage() {
                               />
                             </svg>
                           )}
-                        </span>
-                      </button>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -848,6 +887,17 @@ export default function CalendarPage() {
             />
           </div>
         </div>
+      )}
+
+      {selectedMedication && (
+        <MedicationDetailSheet
+          key={selectedMedication.id}
+          medication={selectedMedication}
+          today={realTodayKey}
+          onClose={() => setSelectedMedication(null)}
+          onDelete={handleDeleteMedication}
+          onSaveTimes={handleSaveMedicationTimes}
+        />
       )}
     </main>
   );
