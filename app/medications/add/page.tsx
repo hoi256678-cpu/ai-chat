@@ -248,7 +248,7 @@ export default function AddMedicationPage() {
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
         <section>
-          <h2 className="mb-2 text-xs font-semibold text-sub">
+          <h2 className="mb-2.5 text-sm font-semibold text-sub">
             처방전/진단서 사진 (선택)
           </h2>
           {!photo ? (
@@ -324,7 +324,7 @@ export default function AddMedicationPage() {
         </section>
 
         <section className="mt-6">
-          <h2 className="mb-2 text-xs font-semibold text-sub">약 이름 직접 추가</h2>
+          <h2 className="mb-2.5 text-sm font-semibold text-sub">약 이름 직접 추가</h2>
           <div className="flex gap-2">
             <input
               value={manualName}
@@ -349,7 +349,7 @@ export default function AddMedicationPage() {
 
         {pending.length > 0 && (
           <section className="mt-6">
-            <h2 className="mb-2 text-xs font-semibold text-sub">등록 예정 목록</h2>
+            <h2 className="mb-2.5 text-sm font-semibold text-sub">등록 예정 목록</h2>
             <div className="flex flex-col gap-3">
               {pending.map((med) => (
                 <div
@@ -434,14 +434,14 @@ export default function AddMedicationPage() {
                   </div>
 
                   {med.times.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-3">
+                    <div className="mt-3 flex flex-wrap gap-2.5">
                       {med.times.map((time) => (
                         <div
                           key={time}
-                          className="flex items-center gap-1 text-xs text-sub"
+                          className="flex items-center gap-1.5 rounded-full bg-tint py-1 pl-3 pr-1 text-sm text-ink"
                         >
                           <label className="flex items-center gap-1.5">
-                            시간
+                            <span className="text-xs text-sub">시간</span>
                             <input
                               type="time"
                               value={time}
@@ -464,13 +464,13 @@ export default function AddMedicationPage() {
                                   )
                                 );
                               }}
-                              className="rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+                              className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-accent"
                             />
                           </label>
                           <button
                             onClick={() => removeTime(med.key, time)}
                             aria-label={`${time} 삭제`}
-                            className="flex h-5 w-5 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-surface hover:text-danger"
                           >
                             ✕
                           </button>
