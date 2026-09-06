@@ -6,11 +6,13 @@ export type MedicationInput = {
   startDate: string;
   endDate: string;
   photo?: string | null;
+  precautions?: string | null;
 };
 
 export type MedicationRecord = Omit<MedicationInput, "photo"> & {
   id: string;
   createdAt: string;
+  precautions: string | null;
 };
 
 export type MedicationLogRecord = {
@@ -29,6 +31,7 @@ export async function saveMedication(input: MedicationInput): Promise<void> {
     start_date: input.startDate,
     end_date: input.endDate,
     photo: input.photo ?? null,
+    precautions: input.precautions ?? null,
   });
 
   if (error) throw error;
@@ -38,7 +41,7 @@ export async function getMedications(): Promise<MedicationRecord[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("medications")
-    .select("id,name,times,start_date,end_date,created_at")
+    .select("id,name,times,start_date,end_date,created_at,precautions")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -50,6 +53,7 @@ export async function getMedications(): Promise<MedicationRecord[]> {
     startDate: row.start_date,
     endDate: row.end_date,
     createdAt: row.created_at,
+    precautions: row.precautions ?? null,
   }));
 }
 

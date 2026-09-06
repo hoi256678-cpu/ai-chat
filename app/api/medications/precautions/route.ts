@@ -1,0 +1,28 @@
+import { getMedicationPrecautions } from "@/lib/gemini";
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+  const name: string =
+    typeof body?.name === "string" ? body.name.trim() : "";
+  const photo: string | undefined =
+    typeof body?.photo === "string" && body.photo.startsWith("data:image/")
+      ? body.photo
+      : undefined;
+
+  if (!name) {
+    return Response.json({ error: "약 이름이 필요해요." }, { status: 400 });
+  }
+
+  if (photo && photo.length > 6_000_000) {
+    return Response.json({ error: "사진이 너무 커요." }, { status: 400 });
+  }
+
+  try {
+    const precautions = await getMedicationPrecautions(name, photo);
+    return Response.json({ precautions });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요.";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}

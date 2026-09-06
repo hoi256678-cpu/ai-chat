@@ -35,6 +35,7 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<MedicationRecord[] | null>(null);
   const [logs, setLogs] = useState<MedicationLogRecord[]>([]);
   const [error, setError] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     getMedications()
@@ -208,26 +209,63 @@ export default function MedicationsPage() {
             <section className="mt-8">
               <h2 className="mb-2 text-xs font-semibold text-sub">등록된 약</h2>
               <div className="flex flex-col gap-2">
-                {medications.map((med) => (
-                  <div
-                    key={med.id}
-                    className="flex items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{med.name}</p>
-                      <p className="text-xs text-sub">
-                        {med.times.join(", ")} · {dDay(med.endDate, today)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(med.id)}
-                      aria-label={`${med.name} 삭제`}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
+                {medications.map((med) => {
+                  const expanded = expandedId === med.id;
+                  return (
+                    <div
+                      key={med.id}
+                      className="rounded-2xl border border-line bg-surface"
                     >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <button
+                          onClick={() => setExpandedId(expanded ? null : med.id)}
+                          aria-expanded={expanded}
+                          className="flex flex-1 items-center justify-between gap-2 text-left"
+                        >
+                          <span>
+                            <span className="block text-sm font-semibold text-ink">
+                              {med.name}
+                            </span>
+                            <span className="block text-xs text-sub">
+                              {med.times.join(", ")} · {dDay(med.endDate, today)}
+                            </span>
+                          </span>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className={`shrink-0 text-sub transition-transform ${
+                              expanded ? "rotate-180" : ""
+                            }`}
+                          >
+                            <path
+                              d="M6 9l6 6 6-6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(med.id)}
+                          aria-label={`${med.name} 삭제`}
+                          className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {expanded && (
+                        <div className="border-t border-line px-4 py-3">
+                          <p className="whitespace-pre-line text-xs text-sub">
+                            {med.precautions ?? "주의사항 정보가 없어요."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </>

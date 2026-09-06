@@ -115,3 +115,60 @@ export async function extractMedicineNames(photoDataUrl: string): Promise<string
     return [];
   }
 }
+
+export async function getMedicationPrecautions(
+  name: string,
+  photoDataUrl?: string | null
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
+    );
+  }
+
+  const prompt =
+    `"${name}"이라는 약의 복용 주의사항을 알려주세요. ` +
+    "흔한 부작용, 함께 먹으면 안 되는 약/음식(병용금기), 복용 시 지켜야 할 점을 " +
+    "짧은 문장이나 불릿 3~5개로 한국어로 정리해주세요. " +
+    "이건 의학적 진단이나 처방이 아니라 일반적인 참고 정보이며, " +
+    "정확한 복용법은 반드시 의사·약사와 상담해야 한다는 점을 마지막에 한 줄로 덧붙이세요. " +
+    "마크다운 코드펜스 없이 텍스트로만 응답하세요.";
+
+  const parts: Record<string, unknown>[] = [{ text: prompt }];
+
+  if (photoDataUrl) {
+    const match = photoDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (match) {
+      const [, mimeType, base64Data] = match;
+      parts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
+    }
+  }
+
+  const body = {
+    contents: [{ role: "user", parts }],
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
+    throw new Error("AI가 주의사항을 확인하지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  const data = await res.json();
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (typeof reply !== "string" || !reply.trim()) {
+    throw new Error("AI가 주의사항을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  return reply.trim();
+}
