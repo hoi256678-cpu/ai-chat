@@ -8,16 +8,10 @@ import {
   getDoseLogs,
   deleteMedication,
   logDose,
+  computeDoseSlots,
   type MedicationRecord,
   type MedicationLogRecord,
 } from "@/lib/medications";
-
-type Slot = {
-  medicationId: string;
-  name: string;
-  time: string;
-  taken: boolean;
-};
 
 function dDay(endDate: string, today: string): string {
   const diffDays = Math.round(
@@ -85,16 +79,7 @@ export default function MedicationsPage() {
 
   const nowHHMM = new Date().toTimeString().slice(0, 5);
 
-  const slots: Slot[] = activeMedications
-    .flatMap((m) =>
-      m.times.map((time) => ({
-        medicationId: m.id,
-        name: m.name,
-        time,
-        taken: logs.some((l) => l.medicationId === m.id && l.time === time),
-      }))
-    )
-    .sort((a, b) => a.time.localeCompare(b.time));
+  const slots = computeDoseSlots(activeMedications, logs, today);
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-bg">
