@@ -48,7 +48,14 @@ export async function generateReply(messages: ChatMessage[], context?: string) {
   return reply;
 }
 
-export async function extractMedicineNames(photoDataUrl: string): Promise<string[]> {
+export type ExtractedMedicine = {
+  name: string;
+  intervalHours: number | null;
+};
+
+export async function extractMedicineNames(
+  photoDataUrl: string
+): Promise<ExtractedMedicine[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -63,8 +70,12 @@ export async function extractMedicineNames(photoDataUrl: string): Promise<string
   const [, mimeType, base64Data] = match;
 
   const prompt =
-    "이 사진은 처방전 또는 진단서예요. 사진에서 보이는 약 이름만 정확히 추출해서 " +
-    'JSON 배열로만 응답하세요. 예: ["타이레놀정500mg", "지르텍정"]. ' +
+    "이 사진은 처방전 또는 진단서예요. 사진에서 보이는 약 이름과 복용법(투여 횟수/간격)을 찾아서 " +
+    'JSON 배열로만 응답하세요. 각 항목은 {"name": 약 이름, "intervalHours": 복용 간격(시간 단위 숫자)} ' +
+    "형태예요. 복용법이 '1일 3회'처럼 하루 횟수로만 적혀 있으면 24를 그 횟수로 나눠 반올림한 정수를 " +
+    "intervalHours로 쓰고, '4시간마다'처럼 간격이 직접 적혀 있으면 그 값을 그대로 쓰세요. 복용법을 알 수 " +
+    '없으면 intervalHours를 null로 하세요. 예: [{"name":"타이레놀정500mg","intervalHours":8},' +
+    '{"name":"지르텍정","intervalHours":null}]. ' +
     "약 이름을 하나도 찾을 수 없으면 빈 배열 []을 응답하세요. " +
     "다른 설명이나 마크다운 코드펜스 없이 JSON 배열만 응답하세요.";
 
@@ -107,10 +118,19 @@ export async function extractMedicineNames(photoDataUrl: string): Promise<string
 
   try {
     const parsed = JSON.parse(cleaned);
-    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
-      return parsed;
+    if (!Array.isArray(parsed)) return [];
+
+    const items: ExtractedMedicine[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== "object" || typeof item.name !== "string") continue;
+      const rawInterval = (item as Record<string, unknown>).intervalHours;
+      const intervalHours =
+        typeof rawInterval === "number" && rawInterval > 0 && rawInterval <= 24
+          ? Math.round(rawInterval)
+          : null;
+      items.push({ name: item.name, intervalHours });
     }
-    return [];
+    return items;
   } catch {
     return [];
   }

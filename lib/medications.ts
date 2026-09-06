@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { formatDateKey } from "@/lib/chatHistory";
 
 export type MedicationInput = {
   name: string;
@@ -96,4 +97,72 @@ export async function getDoseLogs(dateKey: string): Promise<MedicationLogRecord[
     time: row.time,
     takenAt: row.taken_at,
   }));
+}
+
+// 시작시간부터 24시간을 간격(시간 단위)으로 나눠 하루치 복용 시간을 생성한다.
+// 예: ("08:00", 4) -> ["00:00","04:00","08:00","12:00","16:00","20:00"] (자정 넘어가는 시간 포함)
+export function generateIntervalTimes(
+  startTime: string,
+  intervalHours: number
+): string[] {
+  if (!intervalHours || intervalHours <= 0 || intervalHours > 24) return [];
+  const [hours, minutes] = startTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return [];
+
+  const startMinutes = hours * 60 + minutes;
+  const stepMinutes = Math.round(intervalHours * 60);
+  const dayMinutes = 24 * 60;
+  const times = new Set<string>();
+
+  for (let t = startMinutes; t < startMinutes + dayMinutes; t += stepMinutes) {
+    const mins = ((t % dayMinutes) + dayMinutes) % dayMinutes;
+    const hh = String(Math.floor(mins / 60)).padStart(2, "0");
+    const mm = String(mins % 60).padStart(2, "0");
+    times.add(`${hh}:${mm}`);
+  }
+
+  return Array.from(times).sort();
+}
+
+export type DoseSlot = {
+  medicationId: string;
+  name: string;
+  time: string;
+  taken: boolean;
+};
+
+export function computeDoseSlots(
+  medications: MedicationRecord[],
+  logs: MedicationLogRecord[],
+  today: string
+): DoseSlot[] {
+  const active = medications.filter(
+    (m) => m.startDate <= today && today <= m.endDate
+  );
+
+  return active
+    .flatMap((m) =>
+      m.times.map((time) => ({
+        medicationId: m.id,
+        name: m.name,
+        time,
+        taken: logs.some(
+          (l) => l.medicationId === m.id && l.time === time && l.dateKey === today
+        ),
+      }))
+    )
+    .sort((a, b) => a.time.localeCompare(b.time));
+}
+
+export async function getDueCount(): Promise<number> {
+  const today = formatDateKey(new Date());
+  const [medications, logs] = await Promise.all([
+    getMedications(),
+    getDoseLogs(today),
+  ]);
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
+
+  return computeDoseSlots(medications, logs, today).filter(
+    (slot) => !slot.taken && slot.time <= nowHHMM
+  ).length;
 }

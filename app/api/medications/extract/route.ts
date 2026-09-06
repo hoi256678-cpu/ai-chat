@@ -16,8 +16,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const names = await extractMedicineNames(photo);
-    return Response.json({ names });
+    const items = await extractMedicineNames(photo);
+    return Response.json({ items });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요.";

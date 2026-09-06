@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateKey } from "@/lib/chatHistory";
-import { saveMedication } from "@/lib/medications";
+import { saveMedication, generateIntervalTimes } from "@/lib/medications";
+import type { ExtractedMedicine } from "@/lib/gemini";
 
 const today = formatDateKey(new Date());
 
@@ -35,9 +36,12 @@ export default function AddMedicationPage() {
   const router = useRouter();
   const [photo, setPhoto] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
-  const [candidates, setCandidates] = useState<string[]>([]);
+  const [candidates, setCandidates] = useState<ExtractedMedicine[]>([]);
   const [manualName, setManualName] = useState("");
   const [pending, setPending] = useState<PendingMed[]>([]);
+  const [intervalInputs, setIntervalInputs] = useState<
+    Record<string, { start: string; hours: string }>
+  >({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -72,7 +76,14 @@ export default function AddMedicationPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "약 이름을 찾지 못했어요.");
-      setCandidates([...new Set((data.names ?? []) as string[])]);
+      const items = (data.items ?? []) as ExtractedMedicine[];
+      const byName = new Map<string, number | null>();
+      for (const item of items) {
+        if (!byName.has(item.name)) byName.set(item.name, item.intervalHours);
+      }
+      setCandidates(
+        Array.from(byName, ([name, intervalHours]) => ({ name, intervalHours }))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "약 이름을 찾지 못했어요.");
     } finally {
@@ -80,11 +91,15 @@ export default function AddMedicationPage() {
     }
   }
 
-  function toggleName(name: string) {
+  function toggleName(candidate: ExtractedMedicine) {
     setPending((prev) => {
-      const exists = prev.some((p) => p.name === name);
-      if (exists) return prev.filter((p) => p.name !== name);
-      return [...prev, createPending(name, true)];
+      const exists = prev.some((p) => p.name === candidate.name);
+      if (exists) return prev.filter((p) => p.name !== candidate.name);
+      const med = createPending(candidate.name, true);
+      if (candidate.intervalHours) {
+        med.times = generateIntervalTimes("08:00", candidate.intervalHours);
+      }
+      return [...prev, med];
     });
   }
 
@@ -115,6 +130,29 @@ export default function AddMedicationPage() {
 
   function setEndDate(key: string, endDate: string) {
     setPending((prev) => prev.map((p) => (p.key === key ? { ...p, endDate } : p)));
+  }
+
+  function removeTime(key: string, time: string) {
+    setPending((prev) =>
+      prev.map((p) =>
+        p.key === key ? { ...p, times: p.times.filter((t) => t !== time) } : p
+      )
+    );
+  }
+
+  function applyInterval(key: string) {
+    const input = intervalInputs[key];
+    const hours = Number(input?.hours);
+    if (!input?.start || !hours || hours <= 0) return;
+    const generated = generateIntervalTimes(input.start, hours);
+    if (generated.length === 0) return;
+    setPending((prev) =>
+      prev.map((p) =>
+        p.key === key
+          ? { ...p, times: Array.from(new Set([...p.times, ...generated])).sort() }
+          : p
+      )
+    );
   }
 
   function removePending(key: string) {
@@ -264,19 +302,20 @@ export default function AddMedicationPage() {
 
           {candidates.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {candidates.map((name) => {
-                const selected = pending.some((p) => p.name === name);
+              {candidates.map((candidate) => {
+                const selected = pending.some((p) => p.name === candidate.name);
                 return (
                   <button
-                    key={name}
-                    onClick={() => toggleName(name)}
+                    key={candidate.name}
+                    onClick={() => toggleName(candidate)}
                     className={
                       selected
                         ? "rounded-full border-2 border-accent bg-tint px-3 py-1.5 text-xs font-semibold text-ink"
                         : "rounded-full border-2 border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink hover:border-accent/40"
                     }
                   >
-                    {name}
+                    {candidate.name}
+                    {candidate.intervalHours ? ` · ${candidate.intervalHours}시간마다` : ""}
                   </button>
                 );
               })}
@@ -348,39 +387,94 @@ export default function AddMedicationPage() {
                     ))}
                   </div>
 
+                  <div className="mt-3 flex flex-wrap items-end gap-2">
+                    <label className="flex flex-col gap-1 text-xs text-sub">
+                      시작시간
+                      <input
+                        type="time"
+                        value={intervalInputs[med.key]?.start ?? "08:00"}
+                        onChange={(event) =>
+                          setIntervalInputs((prev) => ({
+                            ...prev,
+                            [med.key]: {
+                              start: event.target.value,
+                              hours: prev[med.key]?.hours ?? "",
+                            },
+                          }))
+                        }
+                        className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs text-sub">
+                      간격(시간)
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        placeholder="예: 4"
+                        value={intervalInputs[med.key]?.hours ?? ""}
+                        onChange={(event) =>
+                          setIntervalInputs((prev) => ({
+                            ...prev,
+                            [med.key]: {
+                              start: prev[med.key]?.start ?? "08:00",
+                              hours: event.target.value,
+                            },
+                          }))
+                        }
+                        className="w-16 rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+                      />
+                    </label>
+                    <button
+                      onClick={() => applyInterval(med.key)}
+                      className="rounded-full border-2 border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:border-accent/40"
+                    >
+                      주기로 추가
+                    </button>
+                  </div>
+
                   {med.times.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-3">
                       {med.times.map((time) => (
-                        <label
+                        <div
                           key={time}
-                          className="flex items-center gap-1.5 text-xs text-sub"
+                          className="flex items-center gap-1 text-xs text-sub"
                         >
-                          시간
-                          <input
-                            type="time"
-                            value={time}
-                            onChange={(event) => {
-                              const newTime = event.target.value;
-                              setPending((prev) =>
-                                prev.map((p) =>
-                                  p.key === med.key
-                                    ? {
-                                        ...p,
-                                        times: Array.from(
-                                          new Set(
-                                            p.times.map((t) =>
-                                              t === time ? newTime : t
+                          <label className="flex items-center gap-1.5">
+                            시간
+                            <input
+                              type="time"
+                              value={time}
+                              onChange={(event) => {
+                                const newTime = event.target.value;
+                                setPending((prev) =>
+                                  prev.map((p) =>
+                                    p.key === med.key
+                                      ? {
+                                          ...p,
+                                          times: Array.from(
+                                            new Set(
+                                              p.times.map((t) =>
+                                                t === time ? newTime : t
+                                              )
                                             )
-                                          )
-                                        ).sort(),
-                                      }
-                                    : p
-                                )
-                              );
-                            }}
-                            className="rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-accent"
-                          />
-                        </label>
+                                          ).sort(),
+                                        }
+                                      : p
+                                  )
+                                );
+                              }}
+                              className="rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+                            />
+                          </label>
+                          <button
+                            onClick={() => removeTime(med.key, time)}
+                            aria-label={`${time} 삭제`}
+                            className="flex h-5 w-5 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
