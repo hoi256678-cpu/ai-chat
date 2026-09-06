@@ -142,7 +142,9 @@ export function computeDoseSlots(
         medicationId: m.id,
         name: m.name,
         time,
-        taken: logs.some((l) => l.medicationId === m.id && l.time === time),
+        taken: logs.some(
+          (l) => l.medicationId === m.id && l.time === time && l.dateKey === today
+        ),
       }))
     )
     .sort((a, b) => a.time.localeCompare(b.time));
