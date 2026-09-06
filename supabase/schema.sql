@@ -210,3 +210,11 @@ alter table public.medications add constraint medications_times_not_empty
 
 -- Added later: AI가 등록 시점에 생성한 복용 주의사항 텍스트, 선택(조회 실패 시 null).
 alter table public.medications add column if not exists precautions text;
+
+-- Added later: 체크박스로 복용 체크를 "해제"할 수 있게 하려면 delete 정책이 필요함 —
+-- 이게 없으면 RLS가 delete를 조용히 막아서(에러 없이 0행 삭제) 체크 해제가 실제로는
+-- 반영되지 않고 새로고침하면 다시 체크된 상태로 보임.
+drop policy if exists "delete own medication logs" on public.medication_logs;
+create policy "delete own medication logs"
+  on public.medication_logs for delete
+  using (auth.uid() = user_id);
