@@ -192,10 +192,12 @@ export default function CalendarPage() {
   const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
   const [moods, setMoods] = useState<Map<string, MoodKey>>(new Map());
   const [events, setEvents] = useState<Map<string, CalendarEvent[]>>(new Map());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // 캘린더에 들어오면 오늘 날짜가 바로 선택된 채로 시작 — 날짜를 눌러야만
+  // 당일 기분/복용/일정 패널이 보이던 걸, 열자마자 보이게.
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
   const [newEventTitle, setNewEventTitle] = useState("");
   const [eventKind, setEventKind] = useState<"single" | "period" | null>(null);
-  const [rangeStart, setRangeStart] = useState("");
+  const [rangeStart, setRangeStart] = useState(() => formatDateKey(new Date()));
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [rangeViewMonth, setRangeViewMonth] = useState(() => startOfMonth(new Date()));
   const [showRangePopup, setShowRangePopup] = useState(false);
@@ -208,15 +210,21 @@ export default function CalendarPage() {
   );
 
   useEffect(() => {
-    Promise.all([getDatesWithHistory(), getMoods(), getAllEvents(), getMedications()]).then(
-      ([dates, moodMap, eventMap, meds]) => {
-        setHistoryDates(new Set(dates));
-        setMoods(moodMap);
-        setEvents(eventMap);
-        setMedications(meds);
-        setReady(true);
-      }
-    );
+    const todayKeyForLogs = formatDateKey(new Date());
+    Promise.all([
+      getDatesWithHistory(),
+      getMoods(),
+      getAllEvents(),
+      getMedications(),
+      getDoseLogs(todayKeyForLogs),
+    ]).then(([dates, moodMap, eventMap, meds, doseLogs]) => {
+      setHistoryDates(new Set(dates));
+      setMoods(moodMap);
+      setEvents(eventMap);
+      setMedications(meds);
+      setSelectedDoseLogs(doseLogs);
+      setReady(true);
+    });
   }, []);
 
   async function handleLogout() {
