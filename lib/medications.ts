@@ -81,6 +81,22 @@ export async function logDose(
   if (error && error.code !== "23505") throw error;
 }
 
+export async function unlogDose(
+  medicationId: string,
+  dateKey: string,
+  time: string
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("medication_logs")
+    .delete()
+    .eq("medication_id", medicationId)
+    .eq("date_key", dateKey)
+    .eq("time", time);
+
+  if (error) throw error;
+}
+
 export async function getDoseLogs(dateKey: string): Promise<MedicationLogRecord[]> {
   const supabase = createClient();
   const { data, error } = await supabase
