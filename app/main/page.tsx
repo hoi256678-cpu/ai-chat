@@ -113,14 +113,14 @@ export default function MainPage() {
               onClick={() => router.push("/medications")}
               className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
             >
-              복용/복약관리
+              복용/복약 관리하기
             </button>
 
             <button
               onClick={() => router.push("/chats")}
               className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
             >
-              캘린더
+              캘린더 확인하기
             </button>
           </div>
         </div>
