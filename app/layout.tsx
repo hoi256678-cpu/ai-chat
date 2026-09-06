@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { DoseToaster } from "@/components/DoseToaster";
 
 // Wordmark + numerals only (STEP counters, dates) — Korean body text uses
 // Pretendard, loaded via the <link> below. Space Grotesk never touches
@@ -37,7 +38,10 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
       </head>
-      <body className="flex h-dvh flex-col overflow-hidden">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden">
+        {children}
+        <DoseToaster />
+      </body>
     </html>
   );
 }

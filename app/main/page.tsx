@@ -3,12 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatDateKey } from "@/lib/chatHistory";
 import { getDueSlots, type DoseSlot } from "@/lib/medications";
+import { isDoseSeen, markDosesSeen } from "@/lib/doseNotifications";
+
+const POLL_INTERVAL_MS = 30_000;
 
 export default function MainPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [dueSlots, setDueSlots] = useState<DoseSlot[]>([]);
+  const [unseenCount, setUnseenCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
@@ -23,9 +28,22 @@ export default function MainPage() {
       const nickname = data.user?.user_metadata?.nickname;
       setDisplayName(nickname || data.user?.email?.split("@")[0] || "");
     });
-    getDueSlots()
-      .then(setDueSlots)
-      .catch(() => {});
+
+    function refreshDueSlots() {
+      getDueSlots()
+        .then((slots) => {
+          setDueSlots(slots);
+          const today = formatDateKey(new Date());
+          setUnseenCount(
+            slots.filter((s) => !isDoseSeen(today, s.medicationId, s.time)).length
+          );
+        })
+        .catch(() => {});
+    }
+
+    refreshDueSlots();
+    const id = setInterval(refreshDueSlots, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -38,6 +56,17 @@ export default function MainPage() {
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [showNotifications]);
+
+  function handleBellClick() {
+    setShowNotifications((prev) => {
+      const next = !prev;
+      if (next && dueSlots.length > 0) {
+        markDosesSeen(formatDateKey(new Date()), dueSlots);
+        setUnseenCount(0);
+      }
+      return next;
+    });
+  }
 
   async function handleLogout() {
     const supabase = createClient();
@@ -53,7 +82,7 @@ export default function MainPage() {
       >
         <div className="relative" ref={notificationsRef}>
           <button
-            onClick={() => setShowNotifications((prev) => !prev)}
+            onClick={handleBellClick}
             aria-label="복용/복약 알림"
             aria-expanded={showNotifications}
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-ink active:bg-tint"
@@ -72,9 +101,9 @@ export default function MainPage() {
                 strokeLinecap="round"
               />
             </svg>
-            {dueSlots.length > 0 && (
+            {unseenCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
-                {dueSlots.length > 9 ? "9+" : dueSlots.length}
+                {unseenCount > 9 ? "9+" : unseenCount}
               </span>
             )}
           </button>
