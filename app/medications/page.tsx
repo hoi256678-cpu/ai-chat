@@ -40,6 +40,18 @@ function TimeChips({ times, className = "" }: { times: string[]; className?: str
   );
 }
 
+// 불릿 각각이 보통 "투여 주의사항: ..." / "**흔한 부작용**: ..." 처럼 짧은 소제목 +
+// 콜론으로 시작한다 — 그 소제목만 굵게 뽑아내서 본문과 시각적으로 구분한다.
+function splitBulletLabel(text: string): { label: string | null; rest: string } {
+  const bold = text.match(/^\*\*(.+?)\*\*\s*[:：]\s*(.+)$/);
+  if (bold) return { label: bold[1], rest: bold[2] };
+
+  const plain = text.match(/^([^:：]{1,20})[:：]\s*(.+)$/);
+  if (plain) return { label: plain[1], rest: plain[2] };
+
+  return { label: null, rest: text };
+}
+
 // AI 응답은 "안내 문장 + 불릿 3~5개 + 마지막 한 줄 면책 문구" 형태로 오도록 프롬프트가
 // 지시하고 있어(lib/gemini.ts getMedicationPrecautions) — 그 구조를 실제 목록으로
 // 파싱해서 보여준다. 예상과 다른 형식이 오면(불릿이 하나도 없으면) 문단만 나열.
@@ -78,15 +90,23 @@ function PrecautionsView({ text }: { text: string | null }) {
             {line}
           </p>
         ))}
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {bodyLines
           .filter((line) => bulletPattern.test(line))
-          .map((line, i) => (
-            <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink">
-              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
-              <span>{line.replace(bulletPattern, "")}</span>
-            </li>
-          ))}
+          .map((line, i) => {
+            const { label, rest } = splitBulletLabel(line.replace(bulletPattern, ""));
+            return (
+              <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
+                <span>
+                  {label && (
+                    <span className="block font-semibold text-ink">{label}</span>
+                  )}
+                  {rest}
+                </span>
+              </li>
+            );
+          })}
       </ul>
       {disclaimer && (
         <p className="text-xs leading-relaxed text-sub">{disclaimer}</p>
