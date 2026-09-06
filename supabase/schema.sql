@@ -218,3 +218,13 @@ drop policy if exists "delete own medication logs" on public.medication_logs;
 create policy "delete own medication logs"
   on public.medication_logs for delete
   using (auth.uid() = user_id);
+
+-- Added later: 복용 시간 수정 기능 — medications에는 select/insert/delete 정책만
+-- 있고 update가 없어서, 시간 수정 후 저장해도 RLS가 조용히 막아(에러 없이 0행 갱신)
+-- 새로고침하면 원래 시간으로 돌아와 있었음. medication_logs의 delete 정책 누락과
+-- 같은 종류의 문제.
+drop policy if exists "update own medications" on public.medications;
+create policy "update own medications"
+  on public.medications for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

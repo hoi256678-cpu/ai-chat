@@ -7,6 +7,8 @@ import {
   getMedications,
   getDoseLogs,
   deleteMedication,
+  updateMedicationTimes,
+  generateIntervalTimes,
   logDose,
   unlogDose,
   computeDoseSlots,
@@ -122,6 +124,21 @@ export default function MedicationsPage() {
   const [logs, setLogs] = useState<MedicationLogRecord[]>([]);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<MedicationRecord | null>(null);
+  const [editingTimes, setEditingTimes] = useState<string[] | null>(null);
+  const [editInterval, setEditInterval] = useState({ start: "08:00", hours: "" });
+  const [savingTimes, setSavingTimes] = useState(false);
+
+  // 다른 카드를 선택하거나 시트를 닫을 때 이전 카드의 편집 상태가 남지 않도록,
+  // selected를 바꾸는 모든 지점에서 이 두 개를 항상 같이 호출한다.
+  function openMedication(med: MedicationRecord) {
+    setSelected(med);
+    setEditingTimes(null);
+  }
+
+  function closeSheet() {
+    setSelected(null);
+    setEditingTimes(null);
+  }
 
   useEffect(() => {
     getMedications()
@@ -186,12 +203,56 @@ export default function MedicationsPage() {
 
   async function handleDelete(id: string) {
     setError("");
-    setSelected(null);
+    closeSheet();
     setMedications((prev) => (prev ?? []).filter((m) => m.id !== id));
     try {
       await deleteMedication(id);
     } catch {
       setError("삭제에 실패했어요. 새로고침 후 다시 시도해주세요.");
+    }
+  }
+
+  function startEditingTimes() {
+    if (!selected) return;
+    setEditingTimes([...selected.times]);
+    setEditInterval({ start: "08:00", hours: "" });
+  }
+
+  function removeEditTime(time: string) {
+    setEditingTimes((prev) => (prev ? prev.filter((t) => t !== time) : prev));
+  }
+
+  function changeEditTime(oldTime: string, newTime: string) {
+    setEditingTimes((prev) =>
+      prev
+        ? Array.from(new Set(prev.map((t) => (t === oldTime ? newTime : t)))).sort()
+        : prev
+    );
+  }
+
+  function applyEditInterval() {
+    const hours = Number(editInterval.hours);
+    if (!editInterval.start || !hours || hours <= 0) return;
+    const generated = generateIntervalTimes(editInterval.start, hours);
+    if (generated.length === 0) return;
+    setEditingTimes((prev) => Array.from(new Set([...(prev ?? []), ...generated])).sort());
+  }
+
+  async function saveEditingTimes() {
+    if (!selected || !editingTimes || editingTimes.length === 0) return;
+    setSavingTimes(true);
+    setError("");
+    try {
+      await updateMedicationTimes(selected.id, editingTimes);
+      setMedications((prev) =>
+        (prev ?? []).map((m) => (m.id === selected.id ? { ...m, times: editingTimes } : m))
+      );
+      setSelected((prev) => (prev ? { ...prev, times: editingTimes } : prev));
+      setEditingTimes(null);
+    } catch {
+      setError("복용 시간을 저장하지 못했어요. 다시 시도해주세요.");
+    } finally {
+      setSavingTimes(false);
     }
   }
 
@@ -267,7 +328,7 @@ export default function MedicationsPage() {
               <CardDeck
                 items={medications}
                 getKey={(med) => med.id}
-                onSelect={setSelected}
+                onSelect={openMedication}
                 cardClassName={(active) =>
                   active
                     ? "flex h-[22rem] w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300"
@@ -363,7 +424,7 @@ export default function MedicationsPage() {
           <button
             aria-label="닫기"
             className="sheet-backdrop-in absolute inset-0 bg-ink/40"
-            onClick={() => setSelected(null)}
+            onClick={closeSheet}
           />
           <div
             className="sheet-rise-in relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
@@ -375,30 +436,13 @@ export default function MedicationsPage() {
                 <span className="text-sm font-semibold text-ink">
                   {selected.name} · {dDay(selected.endDate, today)}
                 </span>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    aria-label={`${selected.name} 삭제`}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint hover:text-danger"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setSelected(null)}
-                    aria-label="닫기"
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint"
-                  >
-                    ✕
-                  </button>
-                </div>
+                <button
+                  onClick={closeSheet}
+                  aria-label="닫기"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
@@ -406,7 +450,68 @@ export default function MedicationsPage() {
               <div className="flex flex-col gap-6">
                 <div>
                   <h2 className="mb-2 text-sm font-semibold text-ink">복용 시간</h2>
-                  <TimeChips times={selected.times} />
+                  {editingTimes === null ? (
+                    <TimeChips times={selected.times} />
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap gap-2.5">
+                        {editingTimes.map((time) => (
+                          <div
+                            key={time}
+                            className="flex items-center gap-1.5 rounded-full bg-tint py-1 pl-3 pr-1 text-sm text-ink"
+                          >
+                            <input
+                              type="time"
+                              value={time}
+                              onChange={(event) => changeEditTime(time, event.target.value)}
+                              className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+                            />
+                            <button
+                              onClick={() => removeEditTime(time)}
+                              aria-label={`${time} 삭제`}
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-surface hover:text-danger"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="flex flex-col gap-1 text-xs text-sub">
+                          시작시간
+                          <input
+                            type="time"
+                            value={editInterval.start}
+                            onChange={(event) =>
+                              setEditInterval((prev) => ({ ...prev, start: event.target.value }))
+                            }
+                            className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1 text-xs text-sub">
+                          간격(시간)
+                          <input
+                            type="number"
+                            min="1"
+                            max="24"
+                            placeholder="예: 4"
+                            value={editInterval.hours}
+                            onChange={(event) =>
+                              setEditInterval((prev) => ({ ...prev, hours: event.target.value }))
+                            }
+                            className="w-16 rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+                          />
+                        </label>
+                        <button
+                          onClick={applyEditInterval}
+                          className="rounded-full border-2 border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:border-accent/40"
+                        >
+                          주기로 추가
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -414,6 +519,41 @@ export default function MedicationsPage() {
                   <PrecautionsView text={selected.precautions} />
                 </div>
               </div>
+            </div>
+
+            <div className="shrink-0 border-t border-line px-5 pt-3">
+              {editingTimes === null ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={startEditingTimes}
+                    className="flex-1 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98]"
+                  >
+                    복용 시간 수정
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selected.id)}
+                    className="flex-1 rounded-full border border-danger/40 px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-tint active:scale-[0.98]"
+                  >
+                    삭제하기
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingTimes(null)}
+                    className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-tint active:scale-[0.98]"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={saveEditingTimes}
+                    disabled={savingTimes || editingTimes.length === 0}
+                    className="flex-1 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep disabled:opacity-60 active:scale-[0.98]"
+                  >
+                    {savingTimes ? "저장 중…" : "저장하기"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

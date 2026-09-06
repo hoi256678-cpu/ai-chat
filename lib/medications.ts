@@ -65,6 +65,16 @@ export async function deleteMedication(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function updateMedicationTimes(id: string, times: string[]): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("medications")
+    .update({ times })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
 export async function logDose(
   medicationId: string,
   dateKey: string,
