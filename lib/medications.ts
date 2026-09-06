@@ -7,11 +7,13 @@ export type MedicationInput = {
   startDate: string;
   endDate: string;
   photo?: string | null;
+  precautions?: string | null;
 };
 
 export type MedicationRecord = Omit<MedicationInput, "photo"> & {
   id: string;
   createdAt: string;
+  precautions: string | null;
 };
 
 export type MedicationLogRecord = {
@@ -30,6 +32,7 @@ export async function saveMedication(input: MedicationInput): Promise<void> {
     start_date: input.startDate,
     end_date: input.endDate,
     photo: input.photo ?? null,
+    precautions: input.precautions ?? null,
   });
 
   if (error) throw error;
@@ -39,7 +42,7 @@ export async function getMedications(): Promise<MedicationRecord[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("medications")
-    .select("id,name,times,start_date,end_date,created_at")
+    .select("id,name,times,start_date,end_date,created_at,precautions")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -51,6 +54,7 @@ export async function getMedications(): Promise<MedicationRecord[]> {
     startDate: row.start_date,
     endDate: row.end_date,
     createdAt: row.created_at,
+    precautions: row.precautions ?? null,
   }));
 }
 
@@ -75,6 +79,22 @@ export async function logDose(
 
   // 23505 = unique_violation — 이미 체크된 슬롯을 다시 누른 것뿐이므로 성공 처리
   if (error && error.code !== "23505") throw error;
+}
+
+export async function unlogDose(
+  medicationId: string,
+  dateKey: string,
+  time: string
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("medication_logs")
+    .delete()
+    .eq("medication_id", medicationId)
+    .eq("date_key", dateKey)
+    .eq("time", time);
+
+  if (error) throw error;
 }
 
 export async function getDoseLogs(dateKey: string): Promise<MedicationLogRecord[]> {

@@ -180,13 +180,30 @@ export default function AddMedicationPage() {
     setSaving(true);
     const failed: PendingMed[] = [];
     for (const med of pending) {
+      const medPhoto = med.fromPhoto ? photo : null;
+      let precautions: string | null = null;
+      try {
+        const res = await fetch("/api/medications/precautions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: med.name.trim(), photo: medPhoto }),
+        });
+        const data = await res.json();
+        if (res.ok && typeof data.precautions === "string") {
+          precautions = data.precautions;
+        }
+      } catch {
+        // 주의사항 조회 실패는 저장을 막지 않음 — precautions는 null로 진행.
+      }
+
       try {
         await saveMedication({
           name: med.name.trim(),
           times: med.times,
           startDate: today,
           endDate: med.endDate,
-          photo: med.fromPhoto ? photo : null,
+          photo: medPhoto,
+          precautions,
         });
       } catch {
         failed.push(med);
@@ -210,7 +227,7 @@ export default function AddMedicationPage() {
       >
         <button
           onClick={() => router.push("/medications")}
-          aria-label="복용 알림으로 돌아가기"
+          aria-label="복용/복약 알림으로 돌아가기"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

@@ -207,3 +207,6 @@ alter table public.medications add constraint medications_end_after_start
 alter table public.medications drop constraint if exists medications_times_not_empty;
 alter table public.medications add constraint medications_times_not_empty
   check (array_length(times, 1) > 0);
+
+-- Added later: AI가 등록 시점에 생성한 복용 주의사항 텍스트, 선택(조회 실패 시 null).
+alter table public.medications add column if not exists precautions text;
