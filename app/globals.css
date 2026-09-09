@@ -3,9 +3,11 @@
 :root {
   /* "dawn" pastel system — sky blue (calm, focus) warming into a soft
      blush at the edges (the orb-mark, today-marker, disclaimer accents).
-     Deliberately single-theme (no dark-mode invert); tuned so bubble/
-     background tints stay soft while --accent stays legible for
-     white button/icon labels. */
+     Tuned so bubble/background tints stay soft while --accent stays
+     legible for white button/icon labels. See the prefers-color-scheme
+     block below for the dark-mode token set — the same names, swapped
+     values, no separate class/attribute needed since there's no manual
+     toggle in the UI. */
   --bg: #eff7ff;
   --surface: #ffffff;
   --tint: #e1f1fe;
@@ -20,6 +22,28 @@
   --ink: #16212c;
   --sub: #7e93a7;
   --line: #dcebf7;
+}
+
+/* "dusk" — dark counterpart of the same dawn palette (sky blue holds its
+   hue, background/surfaces go navy instead of white). Follows the OS
+   setting automatically; there's no in-app toggle. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1720;
+    --surface: #1a2530;
+    --tint: #1f3547;
+    --bubble-mine: #2f4f66;
+    --bubble-other: #232f3a;
+    --accent: #4a97e6;
+    --accent-deep: #6cb0f2;
+    --blush: #f0a877;
+    --blush-deep: #d97f45;
+    --danger: #ef7b6e;
+    --danger-tint: #3a2220;
+    --ink: #eef4fa;
+    --sub: #93a8bd;
+    --line: #2a3a48;
+  }
 }
 
 @theme inline {

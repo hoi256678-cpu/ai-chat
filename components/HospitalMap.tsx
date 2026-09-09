@@ -75,6 +75,7 @@ function hospitalKey(hospital: Hospital) {
 }
 
 export function HospitalMap({ department }: { department: string }) {
+  const [retryCount, setRetryCount] = useState(0);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const markerEntriesRef = useRef<
@@ -170,7 +171,13 @@ export function HospitalMap({ department }: { department: string }) {
     return () => {
       cancelled = true;
     };
-  }, [department]);
+  }, [department, retryCount]);
+
+  function handleRetry() {
+    setStatus(GEOLOCATION_SUPPORTED ? "locating" : "error");
+    setError(GEOLOCATION_SUPPORTED ? "" : "이 브라우저에서는 위치 정보를 사용할 수 없어요.");
+    setRetryCount((count) => count + 1);
+  }
 
   useEffect(() => {
     if (!mapData || !mapContainerRef.current) return;
@@ -258,9 +265,17 @@ export function HospitalMap({ department }: { department: string }) {
       )}
 
       {status === "error" && (
-        <p className="p-6 text-center text-sm text-danger" role="alert">
-          {error}
-        </p>
+        <div className="flex flex-col items-center gap-3 p-6 text-center">
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+          <button
+            onClick={handleRetry}
+            className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-deep"
+          >
+            다시 시도
+          </button>
+        </div>
       )}
 
       <div
