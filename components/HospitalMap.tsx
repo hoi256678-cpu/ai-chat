@@ -271,9 +271,32 @@ export function HospitalMap({ department }: { department: string }) {
           </p>
           <button
             onClick={handleRetry}
-            className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition hover:bg-accent-deep"
+            aria-label="다시 시도"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white transition hover:bg-accent-deep active:scale-95"
           >
-            다시 시도
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <polyline
+                points="23 4 23 10 17 10"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points="1 20 1 14 7 14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         </div>
       )}
