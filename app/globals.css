@@ -22,6 +22,12 @@
   --ink: #16212c;
   --sub: #7e93a7;
   --line: #dcebf7;
+  /* Samsung Health-style structure layer: squarer corners than the old
+     full-pill buttons, plus a soft layered card shadow (cards didn't
+     exist before this pass — everything was a pill button). */
+  --card-shadow:
+    0 2px 8px -2px rgba(22, 33, 44, 0.08),
+    0 10px 24px -12px rgba(22, 33, 44, 0.14);
 }
 
 /* "dusk" — dark counterpart of the same dawn palette (sky blue holds its
@@ -43,7 +49,55 @@
     --ink: #eef4fa;
     --sub: #93a8bd;
     --line: #2a3a48;
+    --card-shadow:
+      0 2px 8px -2px rgba(0, 0, 0, 0.35),
+      0 10px 26px -14px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Manual override from Settings → "화면 모드", set as data-theme on <html>
+   by lib/theme.ts. An attribute selector on :root outranks the plain
+   :root inside the media query above, so this wins regardless of OS
+   setting. No attribute (the "시스템 설정" choice) leaves the media query
+   in charge, same as before this feature existed. */
+:root[data-theme="light"] {
+  --bg: #eff7ff;
+  --surface: #ffffff;
+  --tint: #e1f1fe;
+  --bubble-mine: #cdeaff;
+  --bubble-other: #f4f7fa;
+  --accent: #2f87e0;
+  --accent-deep: #1d6fc2;
+  --blush: #ffc9a8;
+  --blush-deep: #f2965f;
+  --danger: #e2685c;
+  --danger-tint: #fdeeec;
+  --ink: #16212c;
+  --sub: #7e93a7;
+  --line: #dcebf7;
+  --card-shadow:
+    0 2px 8px -2px rgba(22, 33, 44, 0.08),
+    0 10px 24px -12px rgba(22, 33, 44, 0.14);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1720;
+  --surface: #1a2530;
+  --tint: #1f3547;
+  --bubble-mine: #2f4f66;
+  --bubble-other: #232f3a;
+  --accent: #4a97e6;
+  --accent-deep: #6cb0f2;
+  --blush: #f0a877;
+  --blush-deep: #d97f45;
+  --danger: #ef7b6e;
+  --danger-tint: #3a2220;
+  --ink: #eef4fa;
+  --sub: #93a8bd;
+  --line: #2a3a48;
+  --card-shadow:
+    0 2px 8px -2px rgba(0, 0, 0, 0.35),
+    0 10px 26px -14px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
@@ -61,6 +115,8 @@
   --color-ink: var(--ink);
   --color-sub: var(--sub);
   --color-line: var(--line);
+  --shadow-card: var(--card-shadow);
+  --radius-card: 1.25rem;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, system-ui, Roboto, "Apple SD Gothic Neo",
     "Malgun Gothic", sans-serif;

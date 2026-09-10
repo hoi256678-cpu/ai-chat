@@ -254,7 +254,7 @@ export function HospitalMap({ department }: { department: string }) {
   }
 
   return (
-    <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="mt-3 overflow-hidden rounded-card bg-surface shadow-card">
       {(status === "locating" || status === "loading") && (
         <div className="flex flex-col items-center gap-2 p-6 text-sm text-sub">
           <div className="h-1.5 w-full max-w-[160px] overflow-hidden rounded-full bg-tint">

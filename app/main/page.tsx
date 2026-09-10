@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDateKey } from "@/lib/chatHistory";
 import { getDueSlots, type DoseSlot } from "@/lib/medications";
 import { isDoseSeen, markDosesSeen } from "@/lib/doseNotifications";
+import MenuCard from "@/components/MenuCard";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -109,7 +110,7 @@ export default function MainPage() {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-11 z-50 w-72 rounded-2xl border border-line bg-surface p-2 shadow-[0_12px_28px_-12px_rgba(22,33,44,0.3)]">
+            <div className="absolute right-0 top-11 z-50 w-72 rounded-card bg-surface p-2 shadow-card">
               {dueSlots.length === 0 ? (
                 <p className="px-3 py-4 text-center text-sm text-sub">
                   아직 복용/복약 알림이 없어요.
@@ -166,34 +167,93 @@ export default function MainPage() {
             오늘은 어떤 이야기를 나눠볼까요?
           </p>
 
-          <div className="mt-10 flex w-64 flex-col items-center gap-3">
-            <button
+          <div className="mt-10 flex w-full max-w-xs flex-col gap-3">
+            <MenuCard
               onClick={() => router.push("/chat")}
-              className="w-full rounded-full bg-accent px-8 py-3.5 text-center text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(47,135,224,0.65)] transition hover:bg-accent-deep active:scale-[0.98]"
-            >
-              채팅 시작하기
-            </button>
+              tone="blush"
+              label="채팅 시작하기"
+              description="오늘의 이야기를 나눠보세요"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 5.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4.5 4v-4H6a2 2 0 0 1-2-2v-9Z"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            />
 
-            <button
+            <MenuCard
               onClick={() => router.push("/symptom-check")}
-              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
-            >
-              증상 체크하기
-            </button>
+              label="증상 체크하기"
+              description="증상을 입력하고 AI 분석 받기"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M8 4v4a2 2 0 0 1-2 2H4M12 4v4a4 4 0 0 0 4 4v0a4 4 0 0 1 4 4v4M8 12v2a4 4 0 0 0 4 4h0"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="18" cy="18" r="2" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+              }
+            />
 
-            <button
+            <MenuCard
               onClick={() => router.push("/medications")}
-              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
-            >
-              복용/복약 관리하기
-            </button>
+              label="복용/복약 관리하기"
+              description="복약 등록하고 알림 받기"
+              tone="blush"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect
+                    x="4"
+                    y="9"
+                    width="16"
+                    height="9"
+                    rx="3.5"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                  />
+                  <path d="M4 13.5h16" stroke="currentColor" strokeWidth="1.7" />
+                  <path
+                    d="M9 9V7a3 3 0 0 1 6 0v2"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            />
 
-            <button
+            <MenuCard
               onClick={() => router.push("/chats")}
-              className="w-full rounded-full border border-line bg-surface px-8 py-3.5 text-center text-sm font-semibold text-ink transition hover:border-accent/40 hover:bg-tint active:scale-[0.98]"
-            >
-              캘린더 확인하기
-            </button>
+              label="캘린더 확인하기"
+              description="지난 대화 기록 살펴보기"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect
+                    x="4"
+                    y="5.5"
+                    width="16"
+                    height="14.5"
+                    rx="3"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                  />
+                  <path
+                    d="M4 9.5h16M8 3.5v3M16 3.5v3"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            />
           </div>
         </div>
       </div>

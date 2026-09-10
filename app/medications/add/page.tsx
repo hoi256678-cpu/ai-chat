@@ -240,7 +240,7 @@ export default function AddMedicationPage() {
             />
           </svg>
         </button>
-        <span className="px-1 font-semibold text-ink">약 추가</span>
+        <h1 className="px-1 text-xl font-bold tracking-tight text-ink">약 추가</h1>
       </header>
 
       <div
@@ -354,7 +354,7 @@ export default function AddMedicationPage() {
               {pending.map((med) => (
                 <div
                   key={med.key}
-                  className="rounded-2xl border border-line bg-surface p-4"
+                  className="rounded-card bg-surface p-4 shadow-card"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <input

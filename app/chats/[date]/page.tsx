@@ -56,7 +56,9 @@ export default function DiaryDayPage({
             />
           </svg>
         </button>
-        <span className="truncate font-semibold text-ink">{formatTitle(date)}</span>
+        <h1 className="truncate text-xl font-bold tracking-tight text-ink">
+          {formatTitle(date)}
+        </h1>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6">

@@ -110,7 +110,9 @@ export default function ChatRoomPage() {
           </svg>
         </button>
         <div className="orb-mark h-8 w-8 shrink-0" aria-hidden />
-        <span className="flex-1 truncate font-semibold text-ink">AI 어시스턴트</span>
+        <h1 className="flex-1 truncate text-xl font-bold tracking-tight text-ink">
+          AI 어시스턴트
+        </h1>
         <button
           onClick={() => router.push("/chats")}
           aria-label="캘린더로 이동"

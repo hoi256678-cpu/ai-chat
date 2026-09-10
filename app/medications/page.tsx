@@ -158,7 +158,7 @@ export default function MedicationsPage() {
         )}
 
         {medications !== null && medications.length === 0 && (
-          <div className="mx-5 mt-6 rounded-2xl border border-dashed border-line px-4 py-8 text-center">
+          <div className="mx-5 mt-6 rounded-card border border-dashed border-line px-4 py-8 text-center">
             <p className="text-sm text-sub">아직 복용 중인 약이 없어요.</p>
             <button
               onClick={() => router.push("/medications/add")}
@@ -218,10 +218,10 @@ export default function MedicationsPage() {
                         aria-pressed={slot.taken}
                         className={
                           slot.taken
-                            ? "flex w-full items-center justify-between rounded-2xl border border-line bg-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
+                            ? "flex w-full items-center justify-between rounded-card border border-line bg-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
                             : due
-                              ? "flex w-full items-center justify-between rounded-2xl border-2 border-danger bg-danger-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
-                              : "flex w-full items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition hover:border-accent/40 active:scale-[0.98]"
+                              ? "flex w-full items-center justify-between rounded-card border-2 border-danger bg-danger-tint px-4 py-3.5 text-left transition active:scale-[0.98]"
+                              : "flex w-full items-center justify-between rounded-card border border-line bg-surface px-4 py-3.5 text-left transition hover:border-accent/40 active:scale-[0.98]"
                         }
                       >
                         <span className="flex flex-col gap-0.5">

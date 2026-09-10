@@ -6,6 +6,7 @@ import type { SymptomResult } from "@/lib/symptomCheck";
 import { saveSymptomCheck } from "@/lib/symptomHistory";
 import { BodyDiagram } from "@/components/BodyDiagram";
 import { SymptomResultView } from "@/components/SymptomResultView";
+import MenuCard from "@/components/MenuCard";
 
 const QUICK_BODY_PARTS = ["피부", "전신", "기타"];
 
@@ -230,13 +231,7 @@ export default function SymptomCheckPage() {
         >
           <ChevronLeftIcon className="h-[18px] w-[18px]" />
         </button>
-        <span className="flex-1 px-1 font-semibold text-ink">증상 체크</span>
-        <button
-          onClick={() => router.push("/symptom-check/history")}
-          className="shrink-0 rounded-full px-3 py-2 text-xs font-medium text-sub transition hover:bg-tint hover:text-ink"
-        >
-          지난 기록
-        </button>
+        <h1 className="flex-1 px-1 text-xl font-bold tracking-tight text-ink">증상 체크</h1>
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -324,6 +319,26 @@ export default function SymptomCheckPage() {
                       className="mt-4 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-base text-ink outline-none placeholder:text-sub/60 focus:border-accent"
                     />
                   )}
+
+                  <div className="mt-6">
+                    <MenuCard
+                      onClick={() => router.push("/symptom-check/history")}
+                      label="지난 증상체크 기록 보기"
+                      description="과거에 확인했던 증상들을 다시 살펴보세요"
+                      icon={
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" />
+                          <path
+                            d="M12 7.5V12l3 2"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      }
+                    />
+                  </div>
                 </StepSection>
               )}
 
@@ -434,7 +449,7 @@ export default function SymptomCheckPage() {
               )}
 
               {loading && (
-                <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface p-6">
+                <div className="mt-6 flex flex-col items-center gap-3 rounded-card bg-surface p-6 shadow-card">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-tint">
                     <div className="loading-bar-fill h-full w-1/3 rounded-full bg-accent" />
                   </div>

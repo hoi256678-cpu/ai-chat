@@ -15,7 +15,7 @@ export function SymptomResultView({ result }: { result: SymptomResult }) {
 
   return (
     <>
-      <div className="flex gap-3 rounded-2xl border border-blush-deep/30 bg-blush/15 px-4 py-3.5">
+      <div className="flex gap-3 rounded-card bg-blush/15 px-4 py-3.5">
         <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-blush-deep" />
         <p className="text-xs leading-relaxed text-ink/80">{result.disclaimer}</p>
       </div>
@@ -121,13 +121,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={
-        emphasis
-          ? "rounded-2xl border border-accent/25 bg-surface p-5"
-          : "rounded-2xl border border-line bg-surface p-5"
-      }
-    >
+    <div className="rounded-card bg-surface p-5 shadow-card">
       <div className="mb-3 flex items-center gap-2.5">
         <span
           className={

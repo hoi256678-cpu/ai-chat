@@ -616,7 +616,7 @@ export default function CalendarPage() {
         </p>
 
         {selectedDate && selectedKey && (
-          <div className="mt-4 rounded-2xl bg-surface p-5 shadow-[0_2px_10px_-4px_rgba(22,33,44,0.15)]">
+          <div className="mt-4 rounded-card bg-surface p-5 shadow-card">
             <p className="mb-4 font-semibold text-ink">{formatPanelTitle(selectedDate)}</p>
 
             {selectedKey === chatTodayKey && (
@@ -658,10 +658,10 @@ export default function CalendarPage() {
                         key={`${slot.medicationId}-${slot.time}`}
                         className={
                           slot.taken
-                            ? "flex items-center justify-between rounded-md border-l-2 border-line bg-tint px-3 py-2 text-sm text-ink transition"
+                            ? "flex items-center justify-between rounded-card border border-line bg-tint px-3 py-2 text-sm text-ink transition"
                             : due
-                              ? "flex items-center justify-between rounded-md border-l-2 border-danger bg-danger-tint px-3 py-2 text-sm text-ink transition"
-                              : "flex items-center justify-between rounded-md border-l-2 border-accent/60 bg-surface px-3 py-2 text-sm text-ink transition hover:bg-tint/70"
+                              ? "flex items-center justify-between rounded-card border-2 border-danger bg-danger-tint px-3 py-2 text-sm text-ink transition"
+                              : "flex items-center justify-between rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink transition hover:border-accent/40 hover:bg-tint/70"
                         }
                       >
                         <button

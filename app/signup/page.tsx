@@ -83,7 +83,7 @@ export default function SignupPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="w-full rounded-2xl border border-line bg-surface p-6 shadow-[0_1px_2px_rgba(22,33,44,0.06)]"
+          className="w-full rounded-card bg-surface p-6 shadow-card"
         >
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5 text-left">

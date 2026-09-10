@@ -41,10 +41,18 @@ function findClosestCard(
 // scroll had a frame to run). scroll-snap-type is turned off for the
 // duration so its snap-correction can't fight our per-frame writes, then
 // restored once we land exactly on the target.
-function animateScrollTo(track: HTMLDivElement, target: number, duration = 280) {
+function animateScrollTo(
+  track: HTMLDivElement,
+  target: number,
+  duration = 280,
+  onComplete?: () => void
+) {
   const start = track.scrollLeft;
   const distance = target - start;
-  if (Math.abs(distance) < 1) return;
+  if (Math.abs(distance) < 1) {
+    onComplete?.();
+    return;
+  }
 
   const previousSnapType = track.style.scrollSnapType;
   track.style.scrollSnapType = "none";
@@ -59,6 +67,7 @@ function animateScrollTo(track: HTMLDivElement, target: number, duration = 280) 
       requestAnimationFrame(step);
     } else {
       track.style.scrollSnapType = previousSnapType;
+      onComplete?.();
     }
   }
   requestAnimationFrame(step);
@@ -157,12 +166,32 @@ export function CardDeck<T>({
     };
   }, []);
 
+  // Centers a given card in the track (same math as the post-drag snap in
+  // handleMouseUp), then runs onComplete once it's actually settled there.
+  function focusCard(index: number, onComplete?: () => void) {
+    const track = trackRef.current;
+    const card = cardRefs.current[index];
+    if (!track || !card) {
+      onComplete?.();
+      return;
+    }
+    const targetLeft = card.offsetLeft + card.offsetWidth / 2 - track.clientWidth / 2;
+    setActiveIndex(index);
+    animateScrollTo(track, targetLeft, 280, onComplete);
+  }
+
   // A card's onClick fires right after mouseup — skip it (once) when the
   // mouse actually dragged the track, so panning past a card doesn't also
-  // open it.
-  function handleCardClick(item: T) {
+  // open it. On wide viewports where neighboring cards peek in, clicking one
+  // of those dimmed side cards brings it to front first — it only opens
+  // once it's finished settling into the center, not mid-slide.
+  function handleCardClick(item: T, index: number) {
     if (justDraggedRef.current) {
       justDraggedRef.current = false;
+      return;
+    }
+    if (index !== activeIndex) {
+      focusCard(index, () => onSelect(item));
       return;
     }
     onSelect(item);
@@ -215,7 +244,17 @@ export function CardDeck<T>({
                 ref={(el) => {
                   cardRefs.current[index] = el;
                 }}
-                onClick={() => handleCardClick(item)}
+                // A partially-offscreen card gaining focus makes the browser
+                // auto-scroll it into view, which fires handleTrackScroll and
+                // flips activeIndex to this card *before* onClick reads it —
+                // so a click on a dimmed side card would look like it was
+                // already active and open immediately instead of just
+                // focusing. Suppressing the mousedown-triggered focus (Tab
+                // navigation is unaffected, that doesn't fire mousedown)
+                // keeps activeIndex — and thus the open-vs-focus decision —
+                // exactly what it was when the click started.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => handleCardClick(item, index)}
                 className={cardClassName(active)}
               >
                 {renderCard(item, active)}

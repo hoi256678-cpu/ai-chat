@@ -178,7 +178,7 @@ export function BodyDiagram({
         height="380"
         role="group"
         aria-label={`신체 부위 선택 그림 (${view === "front" ? "앞면" : "뒷면"})`}
-        className="block rounded-3xl bg-surface p-4 shadow-[0_1px_2px_rgba(22,33,44,0.06)]"
+        className="block rounded-card bg-surface p-4 shadow-card"
       >
         <defs>
           <radialGradient id="pain-marker-gradient" cx="50%" cy="50%" r="50%">

@@ -77,7 +77,7 @@ export function DoseToaster() {
     >
       <button
         onClick={handleClick}
-        className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left shadow-[0_16px_32px_-12px_rgba(22,33,44,0.35)] transition active:scale-[0.98]"
+        className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-card bg-surface px-4 py-3.5 text-left shadow-[0_16px_32px_-12px_rgba(22,33,44,0.35)] transition active:scale-[0.98]"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tint text-accent">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
