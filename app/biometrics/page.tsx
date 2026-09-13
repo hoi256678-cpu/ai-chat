@@ -30,6 +30,7 @@ export default function BiometricsPage() {
 
   async function handleSync() {
     setMessage("");
+    setAnalysis("");
     if (Capacitor.getPlatform() !== "android") {
       setMessage("안드로이드 앱에서만 동기화할 수 있어요.");
       return;

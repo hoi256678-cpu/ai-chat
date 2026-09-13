@@ -1,5 +1,6 @@
 package com.healthmate.shell
 
+import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.health.connect.client.HealthConnectClient
@@ -60,6 +61,7 @@ class HealthConnectPlugin : Plugin() {
         } catch (e: Exception) {
             // Never let a launcher-registration failure take the whole plugin down —
             // isAvailable()/readRecentHeartRate() should still be callable.
+            Log.w("HealthConnectPlugin", "권한 요청 launcher 등록 실패", e)
             permissionLauncher = null
         }
     }
@@ -71,6 +73,7 @@ class HealthConnectPlugin : Plugin() {
             val status = HealthConnectClient.getSdkStatus(context)
             ret.put("available", status == HealthConnectClient.SDK_AVAILABLE)
         } catch (e: Exception) {
+            Log.w("HealthConnectPlugin", "Health Connect SDK 상태 확인 실패", e)
             ret.put("available", false)
         }
         call.resolve(ret)
@@ -104,9 +107,10 @@ class HealthConnectPlugin : Plugin() {
         val sinceStr = call.getString("since")
         val startTime = try {
             if (sinceStr != null) Instant.parse(sinceStr)
-            else Instant.now().minusSeconds(7L * 24 * 3600)
+            else Instant.now().minusSeconds(24L * 3600)
         } catch (e: Exception) {
-            Instant.now().minusSeconds(7L * 24 * 3600)
+            Log.w("HealthConnectPlugin", "since 파싱 실패, 24시간 창으로 대체: $sinceStr", e)
+            Instant.now().minusSeconds(24L * 3600)
         }
         val endTime = Instant.now()
 
@@ -131,7 +135,7 @@ class HealthConnectPlugin : Plugin() {
                 // with the default ascending order, hitting the page limit silently drops the
                 // NEWEST records — the exact data this feature exists to surface. Newest-first
                 // means any truncation costs old data instead. A continuously-worn watch can
-                // plausibly exceed one page over the 7-day default first-sync window, so we also
+                // plausibly exceed one page over the 24-hour default first-sync window, so we also
                 // follow pageToken, bounded by MAX_PAGES as a runaway guard.
                 val samples = JSArray()
                 var pageToken: String? = null

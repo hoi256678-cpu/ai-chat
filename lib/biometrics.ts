@@ -13,10 +13,14 @@ export type BiometricRecord = BiometricReading & {
 export async function saveBiometricReadings(
   readings: BiometricReading[]
 ): Promise<void> {
-  if (readings.length === 0) return;
+  const valid = readings.filter(
+    (r) => Number.isFinite(r.heartRate) && r.heartRate > 0 && r.heartRate < 300
+  );
+  if (valid.length === 0) return;
+
   const supabase = createClient();
   const { error } = await supabase.from("biometrics").upsert(
-    readings.map((r) => ({
+    valid.map((r) => ({
       heart_rate: r.heartRate,
       measured_at: r.measuredAt,
     })),
@@ -56,5 +60,5 @@ export async function getLatestMeasuredAt(): Promise<string | null> {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.measured_at ?? null;
+  return data ? new Date(data.measured_at).toISOString() : null;
 }
