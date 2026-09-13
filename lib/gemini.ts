@@ -195,3 +195,54 @@ export async function getMedicationPrecautions(
 
   return reply.trim();
 }
+
+export async function getBiometricAnalysis(
+  readings: { measuredAt: string; heartRate: number }[]
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
+    );
+  }
+
+  const readingsText = readings
+    .map((r) => `- ${r.measuredAt}: ${r.heartRate} bpm`)
+    .join("\n");
+
+  const prompt =
+    "다음은 갤럭시 워치로 측정된 사용자의 최근 심박수 기록입니다.\n" +
+    `${readingsText}\n\n` +
+    "이 기록을 보고 평소와 다른 점이나 주의할 만한 패턴이 있는지 짧은 문장이나 " +
+    "불릿 2~4개로 한국어로 정리해주세요. 이건 의학적 진단이 아니라 일반적인 참고 " +
+    "정보이며, 심박수가 지속적으로 비정상적이거나 어지러움·가슴 통증 등 다른 증상이 " +
+    "함께 있다면 반드시 병원에서 상담해야 한다는 점을 마지막에 한 줄로 덧붙이세요. " +
+    "마크다운 코드펜스 없이 텍스트로만 응답하세요.";
+
+  const body = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
+    throw new Error("AI가 분석하지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  const data = await res.json();
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (typeof reply !== "string" || !reply.trim()) {
+    throw new Error("AI가 분석 결과를 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  return reply.trim();
+}
