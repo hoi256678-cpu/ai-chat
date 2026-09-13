@@ -1,5 +1,9 @@
 ext {
-    minSdkVersion = 24
+    // 26, not Capacitor's scaffold default of 24: androidx.health.connect:connect-client
+    // declares minSdkVersion 26 in its AAR manifest (manifest merger fails otherwise), and
+    // HealthConnectPlugin.kt uses java.time.Instant, which is only available natively on
+    // API 26+ (staying on 24 would need coreLibraryDesugaring to avoid a NoClassDefFoundError).
+    minSdkVersion = 26
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

@@ -20,6 +20,9 @@ import java.time.Instant
 
 private val READ_HEART_RATE = HealthPermission.getReadPermission(HeartRateRecord::class)
 
+/** Runaway guard on readRecords() pagination — 20 pages x 1000 records is far past any real window. */
+private const val MAX_PAGES = 20
+
 /**
  * Native side of the `HealthConnect` bridge consumed by `lib/nativeHealthConnect.ts`.
  *
@@ -124,22 +127,37 @@ class HealthConnectPlugin : Plugin() {
                     return@launch
                 }
 
-                val response = client.readRecords(
-                    ReadRecordsRequest(
-                        recordType = HeartRateRecord::class,
-                        timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-                    )
-                )
-
+                // readRecords() pages at 1000 records. `ascendingOrder = false` is load-bearing:
+                // with the default ascending order, hitting the page limit silently drops the
+                // NEWEST records — the exact data this feature exists to surface. Newest-first
+                // means any truncation costs old data instead. A continuously-worn watch can
+                // plausibly exceed one page over the 7-day default first-sync window, so we also
+                // follow pageToken, bounded by MAX_PAGES as a runaway guard.
                 val samples = JSArray()
-                for (record in response.records) {
-                    for (sample in record.samples) {
-                        val item = JSObject()
-                        item.put("measuredAt", sample.time.toString())
-                        item.put("heartRate", sample.beatsPerMinute)
-                        samples.put(item)
+                var pageToken: String? = null
+                var page = 0
+                do {
+                    val response = client.readRecords(
+                        ReadRecordsRequest(
+                            recordType = HeartRateRecord::class,
+                            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+                            ascendingOrder = false,
+                            pageToken = pageToken
+                        )
+                    )
+
+                    for (record in response.records) {
+                        for (sample in record.samples) {
+                            val item = JSObject()
+                            item.put("measuredAt", sample.time.toString())
+                            item.put("heartRate", sample.beatsPerMinute)
+                            samples.put(item)
+                        }
                     }
-                }
+
+                    pageToken = response.pageToken
+                    page++
+                } while (pageToken != null && page < MAX_PAGES)
 
                 val ret = JSObject()
                 ret.put("samples", samples)
