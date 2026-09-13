@@ -228,3 +228,27 @@ create policy "update own medications"
   on public.medications for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Added later: 갤럭시 워치 생체 데이터(심박수) — Health Connect에서 동기화해온 측정값.
+-- 워치 측정값은 불변 기록이라 update/delete 정책은 두지 않는다.
+create table if not exists public.biometrics (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  heart_rate integer not null check (heart_rate > 0 and heart_rate < 300),
+  measured_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, measured_at)
+);
+
+create index if not exists biometrics_user_measured_idx
+  on public.biometrics (user_id, measured_at desc);
+
+alter table public.biometrics enable row level security;
+
+create policy "select own biometrics"
+  on public.biometrics for select
+  using (auth.uid() = user_id);
+
+create policy "insert own biometrics"
+  on public.biometrics for insert
+  with check (auth.uid() = user_id);
