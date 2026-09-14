@@ -67,7 +67,7 @@ export default function ChatRoomPage() {
         setTodayDoseSlots(computeDoseSlots(meds, logs, todayKey()));
       })
       .catch(() => {});
-    getSymptomChecks()
+    getSymptomChecks(3)
       .then(setSymptomChecks)
       .catch(() => {});
     getRecentBiometrics()
@@ -106,7 +106,7 @@ export default function ChatRoomPage() {
           context: [
             CHAT_PERSONA_PROMPT,
             buildEventContext(upcomingEvents),
-            buildMedicationContext(medications, todayDoseSlots),
+            buildMedicationContext(medications, todayDoseSlots, todayKey()),
             buildSymptomHistoryContext(symptomChecks),
             buildBiometricContext(biometrics),
           ]

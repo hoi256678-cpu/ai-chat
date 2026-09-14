@@ -199,11 +199,15 @@ export async function getDueCount(): Promise<number> {
 
 export function buildMedicationContext(
   medications: MedicationRecord[],
-  todaySlots: DoseSlot[]
+  todaySlots: DoseSlot[],
+  today: string
 ): string | undefined {
-  if (medications.length === 0) return undefined;
+  const active = medications.filter(
+    (m) => m.startDate <= today && today <= m.endDate
+  );
+  if (active.length === 0) return undefined;
 
-  const names = medications.map((m) => m.name).join(", ");
+  const names = active.map((m) => m.name).join(", ");
   if (todaySlots.length === 0) {
     return `사용자가 복용 중인 약: ${names}. 오늘은 예정된 복용 시간이 없어요.`;
   }

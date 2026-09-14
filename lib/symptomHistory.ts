@@ -34,8 +34,45 @@ export async function saveSymptomCheck(
   if (error) throw error;
 }
 
-export async function getSymptomChecks(): Promise<SymptomCheckRecord[]> {
+// `limit` also drops the `photo` column from the select — the only caller that
+// passes it (/chat's mount effect, via buildSymptomHistoryContext) only reads
+// short text summaries and never the (potentially multi-MB base64) photo, so
+// there's no reason to download it just to discard it. The two branches use
+// separate literal `.select()` strings (rather than one variable column list)
+// because supabase-js parses the select string as a template literal type to
+// infer the row shape — a runtime string variable defeats that inference.
+export async function getSymptomChecks(limit?: number): Promise<SymptomCheckRecord[]> {
   const supabase = createClient();
+
+  if (limit) {
+    const { data, error } = await supabase
+      .from("symptom_checks")
+      .select(
+        "id,body_part,symptoms,duration,severity,note,conditions,departments,summary,disclaimer,home_care,foods,created_at"
+      )
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      bodyPart: row.body_part,
+      symptoms: row.symptoms,
+      duration: row.duration,
+      severity: row.severity,
+      note: row.note,
+      conditions: row.conditions,
+      departments: row.departments,
+      summary: row.summary,
+      disclaimer: row.disclaimer,
+      homeCare: row.home_care ?? [],
+      foods: row.foods ?? [],
+      photo: null,
+      createdAt: row.created_at,
+    }));
+  }
+
   const { data, error } = await supabase
     .from("symptom_checks")
     .select(
