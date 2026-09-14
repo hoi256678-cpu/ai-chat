@@ -95,8 +95,8 @@ export default function ChatRoomPage() {
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <button
-          onClick={() => router.push("/chats")}
-          aria-label="채팅목록으로 돌아가기"
+          onClick={() => router.push("/main")}
+          aria-label="메인으로 돌아가기"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink transition hover:bg-tint active:bg-tint"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

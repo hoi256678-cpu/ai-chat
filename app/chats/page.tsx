@@ -455,7 +455,7 @@ export default function CalendarPage() {
         className="flex-1 overflow-y-auto px-5"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-center gap-2">
           <button
             onClick={() => setViewedMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
             aria-label="이전 달"
