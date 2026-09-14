@@ -1,4 +1,5 @@
 import { generateReply, type ChatMessage } from "@/lib/ai";
+import { containsCrisisSignal, CRISIS_SAFETY_MESSAGE } from "@/lib/crisisDetection";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -7,6 +8,11 @@ export async function POST(request: Request) {
 
   if (messages.length === 0) {
     return Response.json({ error: "메시지를 입력해주세요." }, { status: 400 });
+  }
+
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+  if (lastUserMessage && containsCrisisSignal(lastUserMessage.content)) {
+    return Response.json({ reply: CRISIS_SAFETY_MESSAGE });
   }
 
   try {
