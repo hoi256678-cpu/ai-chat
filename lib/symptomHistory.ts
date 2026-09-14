@@ -62,3 +62,21 @@ export async function getSymptomChecks(): Promise<SymptomCheckRecord[]> {
     createdAt: row.created_at,
   }));
 }
+
+function formatCheckDate(createdAt: string) {
+  const d = new Date(createdAt);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+export function buildSymptomHistoryContext(
+  records: SymptomCheckRecord[]
+): string | undefined {
+  if (records.length === 0) return undefined;
+
+  const lines = records.slice(0, 3).map((r) => {
+    const symptoms = r.symptoms.join(", ");
+    return `- ${formatCheckDate(r.createdAt)}: ${r.bodyPart} 부위, 증상(${symptoms}). AI 요약: ${r.summary}`;
+  });
+
+  return `사용자의 최근 증상체크 기록이에요:\n${lines.join("\n")}\n대화 중 관련 있으면 자연스럽게 후속 질문을 해도 좋아요. 매번 언급할 필요는 없어요.`;
+}

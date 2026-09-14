@@ -196,3 +196,29 @@ export async function getDueSlots(): Promise<DoseSlot[]> {
 export async function getDueCount(): Promise<number> {
   return (await getDueSlots()).length;
 }
+
+export function buildMedicationContext(
+  medications: MedicationRecord[],
+  todaySlots: DoseSlot[]
+): string | undefined {
+  if (medications.length === 0) return undefined;
+
+  const names = medications.map((m) => m.name).join(", ");
+  if (todaySlots.length === 0) {
+    return `사용자가 복용 중인 약: ${names}. 오늘은 예정된 복용 시간이 없어요.`;
+  }
+
+  const taken = todaySlots.filter((s) => s.taken).length;
+  const total = todaySlots.length;
+  const missed = todaySlots
+    .filter((s) => !s.taken)
+    .map((s) => `${s.name}(${s.time})`)
+    .join(", ");
+
+  const status =
+    taken === total
+      ? "오늘 예정된 약은 모두 챙겨 드셨어요."
+      : `오늘 ${total}회 중 ${taken}회 복용했고, 아직 안 드신 건: ${missed}.`;
+
+  return `사용자가 복용 중인 약: ${names}. ${status} 대화 흐름이 자연스러울 때만 부담스럽지 않게 언급해주세요.`;
+}
