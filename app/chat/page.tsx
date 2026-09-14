@@ -9,6 +9,25 @@ import {
   type StoredMessage,
 } from "@/lib/chatHistory";
 import { buildEventContext, getUpcomingEvents, type CalendarEvent } from "@/lib/events";
+import {
+  getMedications,
+  getDoseLogs,
+  computeDoseSlots,
+  buildMedicationContext,
+  type MedicationRecord,
+  type DoseSlot,
+} from "@/lib/medications";
+import {
+  getSymptomChecks,
+  buildSymptomHistoryContext,
+  type SymptomCheckRecord,
+} from "@/lib/symptomHistory";
+import {
+  getRecentBiometrics,
+  buildBiometricContext,
+  type BiometricRecord,
+} from "@/lib/biometrics";
+import { CHAT_PERSONA_PROMPT } from "@/lib/chatPersona";
 import { ChatMessages } from "@/components/ChatMessages";
 
 function formatTime(date: Date) {
@@ -27,6 +46,10 @@ export default function ChatRoomPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
+  const [medications, setMedications] = useState<MedicationRecord[]>([]);
+  const [todayDoseSlots, setTodayDoseSlots] = useState<DoseSlot[]>([]);
+  const [symptomChecks, setSymptomChecks] = useState<SymptomCheckRecord[]>([]);
+  const [biometrics, setBiometrics] = useState<BiometricRecord[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +57,22 @@ export default function ChatRoomPage() {
       setMessages(msgs);
       setReady(true);
     });
-    getUpcomingEvents().then(setUpcomingEvents);
+    getUpcomingEvents()
+      .then(setUpcomingEvents)
+      .catch(() => {});
+
+    Promise.all([getMedications(), getDoseLogs(todayKey())])
+      .then(([meds, logs]) => {
+        setMedications(meds);
+        setTodayDoseSlots(computeDoseSlots(meds, logs, todayKey()));
+      })
+      .catch(() => {});
+    getSymptomChecks()
+      .then(setSymptomChecks)
+      .catch(() => {});
+    getRecentBiometrics()
+      .then(setBiometrics)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -65,7 +103,15 @@ export default function ChatRoomPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map(({ role, content }) => ({ role, content })),
-          context: buildEventContext(upcomingEvents),
+          context: [
+            CHAT_PERSONA_PROMPT,
+            buildEventContext(upcomingEvents),
+            buildMedicationContext(medications, todayDoseSlots),
+            buildSymptomHistoryContext(symptomChecks),
+            buildBiometricContext(biometrics),
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
         }),
       });
       const data = await res.json();
