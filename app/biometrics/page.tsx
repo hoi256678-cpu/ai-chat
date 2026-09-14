@@ -10,17 +10,24 @@ import {
   type BiometricRecord,
 } from "@/lib/biometrics";
 import HealthConnect from "@/lib/nativeHealthConnect";
+import HeartRateChart from "@/components/HeartRateChart";
 
 const HEALTH_CONNECT_PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
 
 export default function BiometricsPage() {
   const router = useRouter();
+  const [isAndroid, setIsAndroid] = useState(false);
   const [readings, setReadings] = useState<BiometricRecord[] | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsAndroid(Capacitor.getPlatform() === "android");
+  }, []);
 
   useEffect(() => {
     getRecentBiometrics()
@@ -31,11 +38,6 @@ export default function BiometricsPage() {
   async function handleSync() {
     setMessage("");
     setAnalysis("");
-    if (Capacitor.getPlatform() !== "android") {
-      setMessage("안드로이드 앱에서만 동기화할 수 있어요.");
-      return;
-    }
-
     setSyncing(true);
     try {
       const { available } = await HealthConnect.isAvailable();
@@ -124,11 +126,17 @@ export default function BiometricsPage() {
       >
         <button
           onClick={handleSync}
-          disabled={syncing}
-          className="mb-4 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98] disabled:opacity-60"
+          disabled={syncing || !isAndroid}
+          className="mb-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98] disabled:opacity-60"
         >
           {syncing ? "동기화 중…" : "Samsung Health에서 동기화"}
         </button>
+
+        {!isAndroid && (
+          <p className="mb-4 text-sm text-sub">
+            📱 실시간 동기화는 안드로이드 앱에서만 가능해요 — 여기선 지난 기록만 볼 수 있어요.
+          </p>
+        )}
 
         {message && (
           <p className="mb-4 text-sm text-sub" role="status">
@@ -158,6 +166,8 @@ export default function BiometricsPage() {
 
         {readings !== null && readings.length > 0 && (
           <>
+            <HeartRateChart readings={readings} />
+
             <ul className="flex flex-col gap-2">
               {readings.map((r) => (
                 <li

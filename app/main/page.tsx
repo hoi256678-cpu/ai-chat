@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Capacitor } from "@capacitor/core";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateKey } from "@/lib/chatHistory";
 import { getDueSlots, type DoseSlot } from "@/lib/medications";
@@ -14,16 +13,10 @@ const POLL_INTERVAL_MS = 30_000;
 export default function MainPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
-  const [isAndroidShell, setIsAndroidShell] = useState(false);
   const [dueSlots, setDueSlots] = useState<DoseSlot[]>([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsAndroidShell(Capacitor.getPlatform() === "android");
-  }, []);
 
   // proxy.ts already guarantees this page is only reached when
   // authenticated — this just fetches the name to display it.
@@ -237,27 +230,26 @@ export default function MainPage() {
               }
             />
 
-            {isAndroidShell && (
-              <MenuCard
-                onClick={() => router.push("/biometrics")}
-                label="워치 데이터 확인하기"
-                description="심박수 동기화하고 AI 분석 받기"
-                icon={
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M4 12h3l2.5-6 4 12 2.5-6H20"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                }
-              />
-            )}
+            <MenuCard
+              onClick={() => router.push("/biometrics")}
+              label="워치 데이터 확인하기"
+              description="심박수 동기화하고 AI 분석 받기"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 12h3l2.5-6 4 12 2.5-6H20"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            />
 
             <MenuCard
               onClick={() => router.push("/chats")}
+              tone="blush"
               label="캘린더 확인하기"
               description="지난 대화 기록 살펴보기"
               icon={
