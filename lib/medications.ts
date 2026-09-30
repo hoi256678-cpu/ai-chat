@@ -167,16 +167,28 @@ export function computeDoseSlots(
   );
 
   return active
-    .flatMap((m) =>
-      m.times.map((time) => ({
-        medicationId: m.id,
-        name: m.name,
-        time,
-        taken: logs.some(
-          (l) => l.medicationId === m.id && l.time === time && l.dateKey === today
-        ),
-      }))
-    )
+    .flatMap((m) => {
+      // A medication registered partway through its own start day shouldn't
+      // show or notify for slot times earlier that same day — those times
+      // passed before the medication existed. On any later day the whole
+      // day's slots are fair game, so this only applies while today is
+      // still the medication's startDate.
+      const createdHHMM =
+        m.startDate === today
+          ? new Date(m.createdAt).toTimeString().slice(0, 5)
+          : null;
+
+      return m.times
+        .filter((time) => createdHHMM === null || time >= createdHHMM)
+        .map((time) => ({
+          medicationId: m.id,
+          name: m.name,
+          time,
+          taken: logs.some(
+            (l) => l.medicationId === m.id && l.time === time && l.dateKey === today
+          ),
+        }));
+    })
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 
@@ -188,22 +200,9 @@ export async function getDueSlots(): Promise<DoseSlot[]> {
   ]);
   const nowHHMM = new Date().toTimeString().slice(0, 5);
 
-  return computeDoseSlots(medications, logs, today).filter((slot) => {
-    if (slot.taken || slot.time > nowHHMM) return false;
-
-    // A medication registered partway through its own start day shouldn't
-    // fire notifications for slot times earlier that same day — those
-    // times passed before the medication (and its notifications) existed.
-    // On any later day the whole day's slots are fair game, so this only
-    // applies while today is still the medication's startDate.
-    const medication = medications.find((m) => m.id === slot.medicationId);
-    if (medication && medication.startDate === today) {
-      const createdHHMM = new Date(medication.createdAt).toTimeString().slice(0, 5);
-      if (slot.time < createdHHMM) return false;
-    }
-
-    return true;
-  });
+  return computeDoseSlots(medications, logs, today).filter(
+    (slot) => !slot.taken && slot.time <= nowHHMM
+  );
 }
 
 export async function getDueCount(): Promise<number> {
