@@ -123,6 +123,7 @@ export function MedicationDetailSheet({
   const [editInterval, setEditInterval] = useState({ start: "08:00", hours: "" });
   const [savingTimes, setSavingTimes] = useState(false);
   const [error, setError] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function startEditingTimes() {
     setEditingTimes([...medication.times]);
@@ -165,6 +166,7 @@ export function MedicationDetailSheet({
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <button
         aria-label="닫기"
@@ -181,13 +183,30 @@ export function MedicationDetailSheet({
             <span className="text-sm font-semibold text-ink">
               {medication.name} · {dDay(medication.endDate, today)}
             </span>
-            <button
-              onClick={onClose}
-              aria-label="닫기"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                aria-label="약 삭제"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-danger-tint hover:text-danger"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 7h16M9 7V4.8c0-.44.36-.8.8-.8h4.4c.44 0 .8.36.8.8V7m-9 0 .87 12.14A2 2 0 0 0 8.86 21h6.28a2 2 0 0 0 1.99-1.86L18 7M10 11v6M14 11v6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="닫기"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sub transition hover:bg-tint"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
 
@@ -274,20 +293,12 @@ export function MedicationDetailSheet({
 
         <div className="shrink-0 border-t border-line px-5 pt-3">
           {editingTimes === null ? (
-            <div className="flex gap-2">
-              <button
-                onClick={startEditingTimes}
-                className="flex-1 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98]"
-              >
-                복용 시간 수정
-              </button>
-              <button
-                onClick={() => onDelete(medication.id)}
-                className="flex-1 rounded-full border border-danger/40 px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-tint active:scale-[0.98]"
-              >
-                삭제하기
-              </button>
-            </div>
+            <button
+              onClick={startEditingTimes}
+              className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-deep active:scale-[0.98]"
+            >
+              복용 시간 수정
+            </button>
           ) : (
             <div className="flex gap-2">
               <button
@@ -308,5 +319,35 @@ export function MedicationDetailSheet({
         </div>
       </div>
     </div>
+
+    {confirmingDelete && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
+        <button
+          aria-label="취소"
+          className="absolute inset-0 bg-ink/40"
+          onClick={() => setConfirmingDelete(false)}
+        />
+        <div className="relative z-10 w-full max-w-xs rounded-2xl bg-surface p-5 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)]">
+          <p className="text-center text-sm font-semibold text-ink">
+            {medication.name}을(를) 삭제하시겠습니까?
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-tint active:scale-[0.98]"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => onDelete(medication.id)}
+              className="flex-1 rounded-full bg-danger px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
