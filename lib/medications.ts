@@ -234,8 +234,8 @@ export function buildMedicationContext(
 
   const status =
     taken === total
-      ? "오늘 예정된 약은 모두 챙겨 드셨어요."
-      : `오늘 ${total}회 중 ${taken}회 복용했고, 아직 안 드신 건: ${missed}.`;
+      ? "오늘 예정된 약은 모두 챙기셨어요."
+      : `오늘 ${total}회 중 ${taken}회 챙겼고, 아직 안 챙긴 건: ${missed}.`;
 
   return `사용자가 복용 중인 약: ${names}. ${status} 대화 흐름이 자연스러울 때만 부담스럽지 않게 언급해주세요.`;
 }

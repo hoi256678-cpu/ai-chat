@@ -205,7 +205,7 @@ export default function MedicationsPage() {
 
             {slots.length > 0 && (
               <section className="mt-8 px-5">
-                <h2 className="mb-3 text-sm font-semibold text-sub">오늘 먹어야 할 약</h2>
+                <h2 className="mb-3 text-sm font-semibold text-sub">오늘 챙겨야 할 약</h2>
                 <div className="flex flex-col gap-2.5">
                   {slots.map((slot) => {
                     const due = !slot.taken && slot.time <= nowHHMM;
