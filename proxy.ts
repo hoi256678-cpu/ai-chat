@@ -52,6 +52,6 @@ export const config = {
     "/settings",
     "/medications",
     "/medications/:path*",
-    "/biometrics",
+    "/health-records",
   ],
 };
