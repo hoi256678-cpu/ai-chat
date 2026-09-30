@@ -500,7 +500,7 @@ export default function AddMedicationPage() {
                       min={today}
                       value={med.endDate}
                       onChange={(event) => setEndDate(med.key, event.target.value)}
-                      className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-ink outline-none ${
+                      className={`w-1/2 rounded-lg border bg-surface px-3 py-2 text-sm text-ink outline-none ${
                         endDateInvalid
                           ? "border-danger focus:border-danger"
                           : "border-line focus:border-accent"
