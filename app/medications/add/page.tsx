@@ -180,25 +180,27 @@ export default function AddMedicationPage() {
     }
 
     setSaving(true);
-    const failed: PendingMed[] = [];
-    for (const med of pending) {
-      const medPhoto = med.fromPhoto ? photo : null;
-      let precautions: string | null = null;
-      try {
-        const res = await fetch("/api/medications/precautions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: med.name.trim(), photo: medPhoto }),
-        });
-        const data = await res.json();
-        if (res.ok && typeof data.precautions === "string") {
-          precautions = data.precautions;
+    // 약마다 Gemini 주의사항 조회 + 저장을 순서대로 기다리면 약 개수만큼
+    // 대기 시간이 곱해져서 체감 저장 시간이 크게 늘어난다 — 서로 독립적인
+    // 작업이라 병렬로 처리한다.
+    const results = await Promise.allSettled(
+      pending.map(async (med) => {
+        const medPhoto = med.fromPhoto ? photo : null;
+        let precautions: string | null = null;
+        try {
+          const res = await fetch("/api/medications/precautions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: med.name.trim(), photo: medPhoto }),
+          });
+          const data = await res.json();
+          if (res.ok && typeof data.precautions === "string") {
+            precautions = data.precautions;
+          }
+        } catch {
+          // 주의사항 조회 실패는 저장을 막지 않음 — precautions는 null로 진행.
         }
-      } catch {
-        // 주의사항 조회 실패는 저장을 막지 않음 — precautions는 null로 진행.
-      }
 
-      try {
         await saveMedication({
           name: med.name.trim(),
           times: med.times,
@@ -207,11 +209,11 @@ export default function AddMedicationPage() {
           photo: medPhoto,
           precautions,
         });
-      } catch {
-        failed.push(med);
-      }
-    }
+      })
+    );
     setSaving(false);
+
+    const failed = pending.filter((_, i) => results[i].status === "rejected");
 
     if (failed.length === 0) {
       router.push("/medications");
