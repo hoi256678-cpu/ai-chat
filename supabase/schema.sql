@@ -252,3 +252,12 @@ create policy "select own biometrics"
 create policy "insert own biometrics"
   on public.biometrics for insert
   with check (auth.uid() = user_id);
+
+-- Added later: 증상체크 기록 삭제 기능(/health-records의 삭제 아이콘) — symptom_checks에는
+-- select/insert 정책만 있고 delete가 없어서, 삭제해도 RLS가 조용히 막아(에러 없이 0행
+-- 삭제) 새로고침하면 기록이 다시 보였음. medication_logs/medications의 delete·update
+-- 정책 누락과 같은 종류의 문제.
+drop policy if exists "delete own symptom checks" on public.symptom_checks;
+create policy "delete own symptom checks"
+  on public.symptom_checks for delete
+  using (auth.uid() = user_id);
