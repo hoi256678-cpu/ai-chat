@@ -82,9 +82,9 @@ export type CardDeckProps<T> = {
 };
 
 // Full-bleed, app-switcher-style swipeable card deck (mouse-drag + native
-// touch swipe). Extracted from /symptom-check/history so other lists (e.g.
-// medications) can reuse the same drag/snap mechanics without duplicating
-// this file's math.
+// touch swipe). Extracted from components/SymptomHistorySection.tsx so other
+// lists (e.g. medications) can reuse the same drag/snap mechanics without
+// duplicating this file's math.
 export function CardDeck<T>({
   items,
   getKey,

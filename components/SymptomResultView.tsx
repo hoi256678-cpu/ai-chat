@@ -6,7 +6,7 @@ import { HospitalMap } from "@/components/HospitalMap";
 
 // Shared between the live result screen (app/symptom-check/page.tsx, right
 // after generateReply returns) and the history detail view
-// (app/symptom-check/history/page.tsx, replaying a saved record) so both
+// (components/SymptomHistorySection.tsx, replaying a saved record) so both
 // look and behave identically — including the department buttons, which
 // re-run a live hospital search near the viewer's current location
 // regardless of when the original check happened.
