@@ -322,7 +322,7 @@ export default function SymptomCheckPage() {
 
                   <div className="mt-6">
                     <MenuCard
-                      onClick={() => router.push("/symptom-check/history")}
+                      onClick={() => router.push("/health-records?tab=symptoms")}
                       label="지난 증상체크 기록 보기"
                       description="과거에 확인했던 증상들을 다시 살펴보세요"
                       icon={
