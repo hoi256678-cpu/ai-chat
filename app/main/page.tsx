@@ -231,9 +231,9 @@ export default function MainPage() {
             />
 
             <MenuCard
-              onClick={() => router.push("/biometrics")}
-              label="워치 데이터 확인하기"
-              description="심박수 동기화하고 AI 분석 받기"
+              onClick={() => router.push("/health-records")}
+              label="내 건강 기록"
+              description="증상 기록과 워치 데이터 한눈에 보기"
               icon={
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
