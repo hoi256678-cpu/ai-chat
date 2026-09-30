@@ -44,6 +44,7 @@ export default function AddMedicationPage() {
   >({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
@@ -161,6 +162,7 @@ export default function AddMedicationPage() {
 
   async function handleSave() {
     setError("");
+    setAttemptedSubmit(true);
     if (pending.length === 0) {
       setError("등록할 약을 추가해주세요.");
       return;
@@ -173,7 +175,7 @@ export default function AddMedicationPage() {
         !p.endDate
     );
     if (invalid) {
-      setError("모든 약에 이름, 복용 시간대, 종료일을 입력해주세요.");
+      setError("빨간 테두리로 표시된 항목을 입력해주세요.");
       return;
     }
 
@@ -350,7 +352,12 @@ export default function AddMedicationPage() {
           <section className="mt-6">
             <h2 className="mb-2.5 text-sm font-semibold text-sub">등록할 약 목록</h2>
             <div className="flex flex-col gap-3">
-              {pending.map((med) => (
+              {pending.map((med) => {
+                const nameInvalid = attemptedSubmit && !med.name.trim();
+                const timesInvalid = attemptedSubmit && med.times.length === 0;
+                const endDateInvalid = attemptedSubmit && !med.endDate;
+
+                return (
                 <div
                   key={med.key}
                   className="rounded-card bg-surface p-4 shadow-card"
@@ -359,7 +366,11 @@ export default function AddMedicationPage() {
                     <input
                       value={med.name}
                       onChange={(event) => updateName(med.key, event.target.value)}
-                      className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+                      className={`flex-1 rounded-lg border bg-surface px-3 py-2 text-sm text-ink outline-none ${
+                        nameInvalid
+                          ? "border-danger focus:border-danger"
+                          : "border-line focus:border-accent"
+                      }`}
                     />
                     <button
                       onClick={() => removePending(med.key)}
@@ -370,7 +381,11 @@ export default function AddMedicationPage() {
                     </button>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div
+                    className={`mt-3 flex flex-wrap gap-2 rounded-2xl border-2 p-2 -m-2 ${
+                      timesInvalid ? "border-danger" : "border-transparent"
+                    }`}
+                  >
                     {PRESETS.map((preset) => (
                       <button
                         key={preset.time}
@@ -485,11 +500,16 @@ export default function AddMedicationPage() {
                       min={today}
                       value={med.endDate}
                       onChange={(event) => setEndDate(med.key, event.target.value)}
-                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+                      className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-ink outline-none ${
+                        endDateInvalid
+                          ? "border-danger focus:border-danger"
+                          : "border-line focus:border-accent"
+                      }`}
                     />
                   </label>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
