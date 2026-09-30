@@ -100,6 +100,13 @@ export async function getSymptomChecks(limit?: number): Promise<SymptomCheckReco
   }));
 }
 
+export async function deleteSymptomCheck(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("symptom_checks").delete().eq("id", id);
+
+  if (error) throw error;
+}
+
 function formatCheckDate(createdAt: string) {
   const d = new Date(createdAt);
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;

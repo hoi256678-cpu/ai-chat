@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  deleteSymptomCheck,
   getSymptomChecks,
   type SymptomCheckRecord,
 } from "@/lib/symptomHistory";
@@ -15,9 +16,11 @@ export default function SymptomCheckHistoryPage() {
   const [records, setRecords] = useState<SymptomCheckRecord[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<SymptomCheckRecord | null>(
     null
   );
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     getSymptomChecks()
@@ -30,6 +33,22 @@ export default function SymptomCheckHistoryPage() {
         setReady(true);
       });
   }, []);
+
+  function closeSheet() {
+    setSelectedRecord(null);
+    setConfirmingDelete(false);
+  }
+
+  async function handleDelete(id: string) {
+    setDeleteError("");
+    closeSheet();
+    setRecords((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await deleteSymptomCheck(id);
+    } catch {
+      setDeleteError("삭제에 실패했어요. 새로고침 후 다시 시도해주세요.");
+    }
+  }
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-bg">
@@ -59,6 +78,12 @@ export default function SymptomCheckHistoryPage() {
         className="flex flex-1 flex-col overflow-y-auto py-6"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
+        {deleteError && (
+          <p className="mb-4 px-5 text-center text-sm text-danger" role="alert">
+            {deleteError}
+          </p>
+        )}
+
         {!ready && (
           <p className="pt-10 text-center text-sm text-sub">불러오는 중…</p>
         )}
@@ -75,7 +100,10 @@ export default function SymptomCheckHistoryPage() {
           <CardDeck
             items={records}
             getKey={(record) => record.id}
-            onSelect={setSelectedRecord}
+            onSelect={(record) => {
+              setSelectedRecord(record);
+              setConfirmingDelete(false);
+            }}
             cardClassName={(active) =>
               active
                 ? "flex h-[26rem] w-full shrink-0 scale-100 flex-col rounded-[2rem] border border-accent/25 bg-surface p-7 text-left opacity-100 shadow-[0_20px_40px_-16px_rgba(22,33,44,0.32)] transition-all duration-300 sm:h-[30rem]"
@@ -128,7 +156,7 @@ export default function SymptomCheckHistoryPage() {
           <button
             aria-label="닫기"
             className="sheet-backdrop-in absolute inset-0 bg-ink/40"
-            onClick={() => setSelectedRecord(null)}
+            onClick={closeSheet}
           />
           <div
             className="sheet-rise-in relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface sm:max-w-xl md:max-w-2xl"
@@ -142,7 +170,7 @@ export default function SymptomCheckHistoryPage() {
                   {formatRelativeDate(selectedRecord.createdAt)}
                 </span>
                 <button
-                  onClick={() => setSelectedRecord(null)}
+                  onClick={closeSheet}
                   aria-label="닫기"
                   className="flex h-9 w-9 items-center justify-center rounded-full text-sub transition hover:bg-tint"
                 >
@@ -196,6 +224,32 @@ export default function SymptomCheckHistoryPage() {
 
                 <SymptomResultView result={selectedRecord} />
               </div>
+            </div>
+
+            <div className="shrink-0 border-t border-line px-5 pt-3">
+              {confirmingDelete ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    className="flex-1 rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-tint active:scale-[0.98]"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selectedRecord.id)}
+                    className="flex-1 rounded-full bg-danger px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
+                  >
+                    정말 삭제
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmingDelete(true)}
+                  className="w-full rounded-full border border-danger/40 px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger-tint active:scale-[0.98]"
+                >
+                  삭제하기
+                </button>
+              )}
             </div>
           </div>
         </div>
