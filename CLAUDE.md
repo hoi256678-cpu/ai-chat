@@ -94,10 +94,10 @@ The user is studying algorithms and **implementing them personally** in this pro
 
 ### 코드 출처 구분 (바이브 vs 직접) — applies to ALL work in this repo, not only the study track
 
-Every change is either **바이브** (Claude/AI wrote it) or **직접** (the user typed it after studying). Full rules and the running registry: `docs/study/AUTHORSHIP.md`. In short:
+Every change is either **바이브** (Claude/AI wrote it) or **직접** (the user typed it, typically after studying, and had Claude review it). Full rules and the registry: `docs/study/AUTHORSHIP.md`.
 
-- **Baseline:** all app code up to commit `7aff87d` (2026-10-07) is 바이브.
-- **Files:** user-written algorithm code goes in `lib/algorithms/` (직접-only folder) and starts with `// [직접 작성] <what> — 학습 기록: docs/study/algorithm-study-log.md §<n>`; a 직접 function inside a 바이브 file gets the same comment above it. Unmarked = 바이브.
-- **Never edit 직접 code yourself** (`[직접 작성]` marked or under `lib/algorithms/`) — not even typos. Report the location and reason; the user fixes it. If the user asks you to write something they would otherwise write, it is 바이브 and stays out of the registry.
-- **Commits:** end every commit message with `Code-Origin: 직접` or `Code-Origin: 바이브`. 직접 commits do **not** get the Claude `Co-Authored-By` line (this overrides the default attribution); 바이브 commits keep it. Never mix the two in one commit — split them.
-- **Registry:** whenever 직접 code is added (including local `~/algorithm-study` work), append a row to the 직접 작성 목록 table in `AUTHORSHIP.md`. The study log and 자소서 소재 may only call something "직접 구현" if it is in that table.
+- **Judge by the conversation, not by mechanical rules.** Up to 2026-10-07 everything is 바이브. Code the user wrote and brought to you for review/push = 직접; anything you wrote (even on request, even fixes to the user's code) = 바이브. Only if a change has no basis in the conversation, ask once before committing.
+- **Record it in the same conversation** — conversations don't carry across sessions or PCs, so the record is the only lasting evidence: commit trailer `Code-Origin: 직접` / `Code-Origin: 바이브` (직접 commits omit the Claude `Co-Authored-By` line, overriding the default attribution; never mix the two in one commit), a `// [직접 작성] … — 학습 기록: …§n` header line on 직접 files (you may add just this line; never touch the body), and a row in the 직접 작성 목록 table.
+- **Don't edit the user's 직접 code** — report location and reason; edit only if they explicitly ask, and record that edit as 바이브.
+- **Never discard uncommitted local changes.** Before any sync with GitHub, if the working tree is dirty, decide from the conversation whether it is the user's work to commit; if unclear, ask. Do not `reset --hard` over it.
+- The study log and 자소서 소재 may only call something "직접 구현" if it is in the registry.
