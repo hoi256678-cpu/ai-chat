@@ -1,0 +1,6 @@
+{
+  // 알고리즘 공부용: 이 폴더에서만 AI 자동완성 끄기 (졸작 등 다른 프로젝트엔 영향 없음)
+  "github.copilot.enable": { "*": false },
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "editor.inlineSuggest.enabled": false
+}

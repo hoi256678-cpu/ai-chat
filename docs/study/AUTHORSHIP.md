@@ -57,11 +57,11 @@ git log --grep "Code-Origin: 바이브"  # 바이브 코딩 커밋만
 
 | 날짜 | 위치 | 내용 | 직접 쓴 부분 | AI가 맡은 부분 | 학습 기록 |
 | --- | --- | --- | --- | --- | --- |
-| 2026-10-07 | `~/algorithm-study/01-trie/trie.c` (로컬) | 트라이 | `insert`, `search` | 뼈대(구조체, `new_node`, `main` 테스트), 리뷰 | §5 |
-| 2026-10-07 | `~/algorithm-study/02-string-set/main.c` (로컬) | 금지어 검사기 | 입출력과 트라이 활용 전체 (`main`) | 문제, 테스트, 채점기, 리뷰 | §6 |
-| 2026-10-07 | `~/algorithm-study/03-naive-search/main.c` (로컬) | 숨은 금지어 찾기 (단순한 방법) | `naive_search`, `main` | 문제, 테스트, 채점기, 리뷰 | §7 |
+| 2026-10-07 | `study/01-trie/trie.c` | 트라이 | `insert`, `search` | 뼈대(구조체, `new_node`, `main` 테스트), 리뷰 | §5 |
+| 2026-10-07 | `study/02-string-set/main.c` | 금지어 검사기 | 입출력과 트라이 활용 전체 (`main`) | 문제, 테스트, 채점기, 리뷰 | §6 |
+| 2026-10-07 | `study/03-naive-search/main.c` | 숨은 금지어 찾기 (단순한 방법) | `naive_search`, `main` | 문제, 테스트, 채점기, 리뷰 | §7 |
 
-`(로컬)` 표시는 아직 이 저장소에 없고 공부용 PC에만 있는 코드다.
+`study/`의 C 코드는 처음에 `~/algorithm-study`(Mac 로컬)에서 작성했고, 2026-10-07에 저장소로 옮겼다. 첫 줄 `[직접 작성]` 표시 외에는 작성한 그대로다.
 
 ## Claude가 지킬 것
 

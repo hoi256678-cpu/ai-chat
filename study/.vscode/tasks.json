@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "C: 컴파일 후 실행",
+      "type": "process",
+      "command": "python3",
+      "windows": { "command": "python" },
+      "args": ["${workspaceFolder}/run.py", "${file}"],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+      "problemMatcher": []
+    }
+  ]
+}
