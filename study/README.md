@@ -19,7 +19,7 @@
 python3 ../judge.py          # main.c 채점 (Windows: python ../judge.py)
 ```
 
-큰 테스트 입력(`02-string-set`의 07·08, `04-failure-link`의 09~11)은 저장소에 없다. `tests` 폴더에서 `python3 gen.py`를 실행하면 같은 내용으로 다시 만들어진다.
+큰 테스트 입력(`02-string-set`의 07·08, `04-failure-link`의 09~11, `05-aho-corasick`의 10~13)은 저장소에 없다. `tests` 폴더에서 `python3 gen.py`를 실행하면 같은 내용으로 다시 만들어진다.
 
 ## 폴더 규칙
 

@@ -11,3 +11,7 @@ a.out
 04-failure-link/tests/09-random.in
 04-failure-link/tests/10-deep-ab.in
 04-failure-link/tests/11-long-chain.in
+05-aho-corasick/tests/10-naive-killer.in
+05-aho-corasick/tests/11-long-chain.in
+05-aho-corasick/tests/12-big-random.in
+05-aho-corasick/tests/13-big-ab.in
