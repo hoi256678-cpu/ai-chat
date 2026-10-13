@@ -72,7 +72,8 @@ def main():
         print(f"{name:<18} {verdict:<30} {ms:>6}ms {('?' if mb is None else mb):>6}MB")
     shutil.rmtree(tmp, ignore_errors=True)
     print("----"); print(f"결과: {passed} / {len(cases)}")
-    if not os.path.exists(os.path.join("tests", "07-long-shared.in")) and os.path.exists(os.path.join("tests", "gen.py")):
+    missing = [o for o in glob.glob(os.path.join("tests", "*.out")) if not os.path.exists(o[:-4] + ".in")]
+    if missing and os.path.exists(os.path.join("tests", "gen.py")):
         print("※ 큰 테스트 파일이 없어요. tests 폴더에서 gen.py를 실행하면 만들어져요.")
 
 if __name__ == "__main__":
