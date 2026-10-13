@@ -61,6 +61,7 @@ git log --grep "Code-Origin: 바이브"  # 바이브 코딩 커밋만
 | 2026-10-07 | `study/02-string-set/main.c` | 금지어 검사기 | 입출력과 트라이 활용 전체 (`main`) | 문제, 테스트, 채점기, 리뷰 | §6 |
 | 2026-10-07 | `study/03-naive-search/main.c` | 숨은 금지어 찾기 (단순한 방법) | `naive_search`, `main` | 문제, 테스트, 채점기, 리뷰 | §7 |
 | 2026-10-13 | `study/04-failure-link/main.c` | BFS로 실패 링크 만들기 | `insert`의 `depth`, `find_node`, `build_fail`, `main` | 문제, 테스트, 채점기, 함수 뼈대, `build_fail` 반복부의 빈칸 뼈대(while 조건 포함), 리뷰 | §9 |
+| 2026-10-13 | `study/05-aho-corasick/main.c` | 숨은 금지어 찾기, 아호코라식 (**진행 중**, 1/13) | 전체 (`insert`, `build_fail`은 04에서 옮김, `search`, `main`) | 문제, 테스트, 채점기, 리뷰 | §12 |
 
 `study/`의 C 코드는 처음에 `~/algorithm-study`(Mac 로컬)에서 작성했고, 2026-10-07에 저장소로 옮겼다. 첫 줄 `[직접 작성]` 표시 외에는 작성한 그대로다.
 
