@@ -21,6 +21,11 @@
 </div>
 
 <p align="center">
+  <img src="docs/images/demo_symptom_check.gif" width="320" alt="증상 체크 데모: 부위 선택부터 AI 분석 결과, 추천 진료과까지" />
+  <br/><sub>증상 체크 데모: 부위 → 증상 → 기간 → 정도 → 메모 → AI 분석 결과 → 추천 진료과</sub>
+</p>
+
+<p align="center">
   <img src="docs/images/shot_main.png" width="23%" alt="메인 화면" />
   <img src="docs/images/shot_symptom.png" width="23%" alt="증상 체크: 부위 선택" />
   <img src="docs/images/shot_result.png" width="23%" alt="증상 분석 결과" />
