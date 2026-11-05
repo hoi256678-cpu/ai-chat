@@ -5,14 +5,18 @@ export type ChatMessage = {
 
 // 앞 모델이 과부하(503)·퇴역(404)이거나 시간 안에 답하지 않으면 다음 모델로 넘어간다.
 // 2026-11-05 측정: gemini-flash-latest(당시 3.8)는 과부하로 60초 무응답이 반복됐고 "minimal"도 거부(400).
-// gemini-3.5-flash + minimal은 5~8초로 안정적. 버전을 고정한 첫 모델이 나중에 퇴역해도
-// 두 번째인 별칭(-latest)으로 넘어가므로 멈추지 않는다.
+// gemini-3.5-flash + minimal은 7~13초, gemini-3.1-flash-lite는 3~5초로 안정적이었고,
+// gemini-flash-lite-latest(당시 3.5-flash-lite)는 503이 잦았다. 과부하는 모델마다 따로 오므로
+// 서로 다른 모델 셋을 차례로 시도한다. 고정 버전이 퇴역(404)해도 마지막 별칭(-latest)까지 내려간다.
+// 무료 플랜에서 gemini-3.5-flash(=3.6)는 하루 20회 한도(429)라 주 모델로 못 쓴다 → 2순위.
+// 한도에 걸린 모델은 0.3초 만에 429를 돌려주므로 순서상 손해가 거의 없다.
 export const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL ?? "gemini-3.5-flash",
-  process.env.GEMINI_FALLBACK_MODEL ?? "gemini-flash-lite-latest",
+  process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite",
+  process.env.GEMINI_FALLBACK_MODEL ?? "gemini-3.5-flash",
+  "gemini-flash-lite-latest",
 ];
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 12_000;
 
 type GeminiBody = { generationConfig?: Record<string, unknown> } & Record<string, unknown>;
 
