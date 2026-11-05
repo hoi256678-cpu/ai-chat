@@ -4,6 +4,8 @@ export type StoredMessage = {
   role: "user" | "assistant";
   content: string;
   time: string;
+  // AI 답변 밑에 위기 안내 띠를 붙일지 (원문 키워드 또는 AI가 위기로 판단). DB messages.crisis.
+  crisis?: boolean;
 };
 
 export function formatDateKey(date: Date) {
@@ -40,7 +42,7 @@ export async function getDayMessages(dateKey: string): Promise<StoredMessage[]> 
   const supabase = createClient();
   const { data, error } = await supabase
     .from("messages")
-    .select("role,content,time")
+    .select("role,content,time,crisis")
     .eq("date_key", dateKey)
     .order("created_at");
 
@@ -55,6 +57,7 @@ export async function appendDayMessage(dateKey: string, message: StoredMessage) 
     role: message.role,
     content: message.content,
     time: message.time,
+    crisis: message.crisis ?? false,
   });
 
   if (error) throw error;

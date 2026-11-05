@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { containsCrisisSignal, CRISIS_KEYWORDS } from "./crisisDetection";
+import { containsCrisisSignal, crisisLevel, CRISIS_KEYWORDS } from "./crisisDetection";
+
+// 단계별 판정: 원문 그대로 걸리면 "direct"(바로 안내), 정규화해야만 걸리면 "normalized"(AI가 판단),
+// 안 걸리면 "none".
+describe("crisisLevel 단계별 판정", () => {
+  it.each(["죽고 싶어", "그냥 죽고싶다", "자살 생각이 나요", "어제 자해했어"])(
+    "원문 그대로 키워드가 있으면 direct: %s",
+    (message) => {
+      expect(crisisLevel(message)).toBe("direct");
+    }
+  );
+
+  it.each(["자 살", "죽.고.싶.다", "자ㅋㅋ해", "내일 모자 살 거야", "살기싫다"])(
+    "정규화해야만 걸리면 normalized: %s",
+    (message) => {
+      expect(crisisLevel(message)).toBe("normalized");
+    }
+  );
+
+  it.each(["오늘 점심 뭐 먹지", "머리가 아파요", ""])("안 걸리면 none: %s", (message) => {
+    expect(crisisLevel(message)).toBe("none");
+  });
+});
 
 // 회귀 테스트: containsCrisisSignal() 안쪽을 아호코라식 + 정규화로 바꾼 뒤에도
 // 지금(includes 방식)이 잡던 것은 계속 잡고, 안 잡던 일상 문장은 계속 안 잡아야 한다.

@@ -29,6 +29,7 @@ import {
 } from "@/lib/biometrics";
 import { CHAT_PERSONA_PROMPT } from "@/lib/chatPersona";
 import { ChatMessages } from "@/components/ChatMessages";
+import { messageForUser, UserFacingError } from "@/lib/userFacingError";
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ko-KR", {
@@ -116,17 +117,18 @@ export default function ChatRoomPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? "응답을 받지 못했어요.");
+        throw new UserFacingError(data.error ?? "응답을 받지 못했어요.");
       }
       const assistantMessage: StoredMessage = {
         role: "assistant",
         content: data.reply,
         time: formatTime(new Date()),
+        crisis: data.crisis === true,
       };
       setMessages((prev) => [...prev, assistantMessage]);
       await appendDayMessage(todayKey(), assistantMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했어요.");
+      setError(messageForUser(err, "메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요."));
     } finally {
       setLoading(false);
     }
