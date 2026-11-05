@@ -7,6 +7,7 @@ import { saveSymptomCheck } from "@/lib/symptomHistory";
 import { BodyDiagram } from "@/components/BodyDiagram";
 import { SymptomResultView } from "@/components/SymptomResultView";
 import MenuCard from "@/components/MenuCard";
+import { messageForUser, UserFacingError } from "@/lib/userFacingError";
 
 const QUICK_BODY_PARTS = ["피부", "전신", "기타"];
 
@@ -185,7 +186,7 @@ export default function SymptomCheckPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error ?? "결과를 받지 못했어요.");
+        throw new UserFacingError(data.error ?? "결과를 받지 못했어요.");
       }
       setResult(data as SymptomResult);
 
@@ -203,7 +204,7 @@ export default function SymptomCheckPage() {
         bodyPart === "피부" ? photo : null
       ).catch((err) => console.error("증상체크 기록 저장 실패:", err));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "오류가 발생했어요.");
+      setError(messageForUser(err, "결과를 받지 못했어요. 잠시 후 다시 시도해주세요."));
     } finally {
       setLoading(false);
     }

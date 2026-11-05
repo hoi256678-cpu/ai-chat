@@ -7,27 +7,27 @@ import { formatDateKey } from "@/lib/chatHistory";
 import { getDueSlots, type DoseSlot } from "@/lib/medications";
 import { isDoseSeen, markDosesSeen } from "@/lib/doseNotifications";
 import MenuCard from "@/components/MenuCard";
+import { displayNameOf } from "@/lib/displayName";
 
 const POLL_INTERVAL_MS = 30_000;
 
-export default function MainPage() {
+// initialName은 서버(page.tsx)가 로그인 쿠키에서 미리 읽어 넣어 준다.
+// 예전엔 빈 값으로 먼저 그린 뒤 브라우저에서 이름을 물어봐서 "안녕하세요, 님"이 잠깐 보였다.
+export default function MainClient({ initialName }: { initialName: string }) {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState("");
+  const [displayName, setDisplayName] = useState(initialName);
   const [dueSlots, setDueSlots] = useState<DoseSlot[]>([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // proxy.ts already guarantees this page is only reached when
-  // authenticated — this just fetches the name to display it.
+  // 서버가 준 이름은 로그인 토큰 기준이라, 설정에서 닉네임을 막 바꾼 직후엔 옛 이름일 수 있다.
+  // 인증 서버에 한 번 더 물어 최신 이름으로 맞춘다(같으면 화면은 그대로).
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      // Prefer the nickname set at signup; fall back to the email's
-      // local-part ("hoi256678") for accounts created before nicknames
-      // existed, or a wall of text with the full address either way.
-      const nickname = data.user?.user_metadata?.nickname;
-      setDisplayName(nickname || data.user?.email?.split("@")[0] || "");
+      const latest = displayNameOf(data.user?.user_metadata, data.user?.email);
+      if (latest) setDisplayName(latest);
     });
 
     function refreshDueSlots() {

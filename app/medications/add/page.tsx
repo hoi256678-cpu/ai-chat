@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatDateKey } from "@/lib/chatHistory";
 import { saveMedication, generateIntervalTimes } from "@/lib/medications";
 import type { ExtractedMedicine } from "@/lib/gemini";
+import { messageForUser, UserFacingError } from "@/lib/userFacingError";
 
 const today = formatDateKey(new Date());
 
@@ -76,7 +77,7 @@ export default function AddMedicationPage() {
         body: JSON.stringify({ photo }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "약 이름을 찾지 못했어요.");
+      if (!res.ok) throw new UserFacingError(data.error ?? "약 이름을 찾지 못했어요.");
       const items = (data.items ?? []) as ExtractedMedicine[];
       const byName = new Map<string, number | null>();
       for (const item of items) {
@@ -86,7 +87,7 @@ export default function AddMedicationPage() {
         Array.from(byName, ([name, intervalHours]) => ({ name, intervalHours }))
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "약 이름을 찾지 못했어요.");
+      setError(messageForUser(err, "약 이름을 찾지 못했어요. 잠시 후 다시 시도해주세요."));
     } finally {
       setExtracting(false);
     }
