@@ -1,6 +1,8 @@
-import type { RefObject } from "react";
+import { Fragment, type RefObject } from "react";
 import type { StoredMessage } from "@/lib/chatHistory";
 import { MarkdownMessage } from "@/components/MarkdownMessage";
+import { CrisisNotice } from "@/components/CrisisNotice";
+import { crisisNoticeAfter } from "@/lib/crisisNotice";
 
 export function ChatMessages({
   messages,
@@ -13,6 +15,8 @@ export function ChatMessages({
   emptyText?: string;
   bottomRef?: RefObject<HTMLDivElement | null>;
 }) {
+  const noticeAfter = crisisNoticeAfter(messages, loading ?? false);
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-1.5">
       {messages.length === 0 && emptyText && (
@@ -25,48 +29,50 @@ export function ChatMessages({
         const isLastInGroup = messages[index + 1]?.role !== message.role;
 
         return (
-          <div
-            key={index}
-            className={
-              isAssistant
-                ? "flex items-end gap-2"
-                : "flex items-end justify-end gap-2"
-            }
-          >
-            {isAssistant && (
-              <div
-                className="orb-mark h-7 w-7 shrink-0 self-end"
-                style={{ visibility: isFirstInGroup ? "visible" : "hidden" }}
-                aria-hidden
-              />
-            )}
-
+          <Fragment key={index}>
             <div
               className={
                 isAssistant
-                  ? "order-2 max-w-[75%] rounded-2xl rounded-bl-md bg-bubble-other px-4 py-2.5 text-[15px] leading-relaxed text-ink shadow-[0_1px_2px_rgba(22,33,44,0.06)]"
-                  : "max-w-[75%] rounded-2xl rounded-br-md bg-bubble-mine px-4 py-2.5 text-[15px] leading-relaxed text-ink"
+                  ? "flex items-end gap-2"
+                  : "flex items-end justify-end gap-2"
               }
             >
-              {isAssistant ? (
-                <MarkdownMessage content={message.content} />
-              ) : (
-                <p className="whitespace-pre-wrap">{message.content}</p>
+              {isAssistant && (
+                <div
+                  className="orb-mark h-7 w-7 shrink-0 self-end"
+                  style={{ visibility: isFirstInGroup ? "visible" : "hidden" }}
+                  aria-hidden
+                />
               )}
-            </div>
-
-            {isLastInGroup && (
-              <span
+  
+              <div
                 className={
                   isAssistant
-                    ? "order-3 mb-0.5 shrink-0 text-[11px] text-sub"
-                    : "mb-0.5 shrink-0 text-[11px] text-sub"
+                    ? "order-2 max-w-[75%] rounded-2xl rounded-bl-md bg-bubble-other px-4 py-2.5 text-[15px] leading-relaxed text-ink shadow-[0_1px_2px_rgba(22,33,44,0.06)]"
+                    : "max-w-[75%] rounded-2xl rounded-br-md bg-bubble-mine px-4 py-2.5 text-[15px] leading-relaxed text-ink"
                 }
               >
-                {message.time}
-              </span>
-            )}
-          </div>
+                {isAssistant ? (
+                  <MarkdownMessage content={message.content} />
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                )}
+              </div>
+  
+              {isLastInGroup && (
+                <span
+                  className={
+                    isAssistant
+                      ? "order-3 mb-0.5 shrink-0 text-[11px] text-sub"
+                      : "mb-0.5 shrink-0 text-[11px] text-sub"
+                  }
+                >
+                  {message.time}
+                </span>
+              )}
+            </div>
+            {noticeAfter.has(index) && <CrisisNotice />}
+          </Fragment>
         );
       })}
 
