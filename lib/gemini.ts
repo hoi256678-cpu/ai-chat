@@ -3,9 +3,26 @@ export type ChatMessage = {
   content: string;
 };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
+// 앞 모델이 과부하(503)·퇴역(404)이거나 시간 안에 답하지 않으면 다음 모델로 넘어간다.
+// 2026-11-05 측정: gemini-flash-latest(당시 3.8)는 과부하로 60초 무응답이 반복됐고 "minimal"도 거부(400).
+// gemini-3.5-flash + minimal은 5~8초로 안정적. 버전을 고정한 첫 모델이 나중에 퇴역해도
+// 두 번째인 별칭(-latest)으로 넘어가므로 멈추지 않는다.
+export const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL ?? "gemini-3.5-flash",
+  process.env.GEMINI_FALLBACK_MODEL ?? "gemini-flash-lite-latest",
+];
 
-export async function generateReply(messages: ChatMessage[], context?: string) {
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+type GeminiBody = { generationConfig?: Record<string, unknown> } & Record<string, unknown>;
+
+// 모든 Gemini 호출이 거치는 함수. 성공하면 답 글자(없으면 null), 모든 모델이 실패하면 errorMessage를 던진다.
+// - thinkingLevel "minimal": 답하기 전 "생각" 단계를 줄여 응답 시간을 크게 줄인다(측정: 10~57초 → 4~6초).
+// - timeoutMs: 한 모델이 이 시간 안에 답하지 않으면 끊는다(예전엔 끝없이 기다렸다).
+export async function callGemini(
+  body: GeminiBody,
+  { errorMessage, timeoutMs = DEFAULT_TIMEOUT_MS }: { errorMessage: string; timeoutMs?: number }
+): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -13,33 +30,60 @@ export async function generateReply(messages: ChatMessage[], context?: string) {
     );
   }
 
+  const payload = JSON.stringify({
+    ...body,
+    generationConfig: {
+      ...body.generationConfig,
+      thinkingConfig: { thinkingLevel: "minimal" },
+    },
+  });
+
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: payload,
+          signal: AbortSignal.timeout(timeoutMs),
+        }
+      );
+      if (!res.ok) {
+        console.error(`Gemini API 오류 (${model}, ${res.status}):`, await res.text());
+        continue;
+      }
+      // 답이 여러 조각으로 올 수 있다(lite 모델에서 확인). 생각 조각은 빼고 글자 조각을 모두 잇는다.
+      const data = await res.json();
+      const parts: { text?: unknown; thought?: boolean }[] =
+        data.candidates?.[0]?.content?.parts ?? [];
+      const text = parts
+        .filter((part) => !part.thought && typeof part.text === "string")
+        .map((part) => part.text)
+        .join("");
+      return text ? text : null;
+    } catch (error) {
+      console.error(`Gemini API 실패 (${model}):`, error);
+    }
+  }
+
+  throw new Error(errorMessage);
+}
+
+export async function generateReply(messages: ChatMessage[], context?: string) {
   const contents = messages.map((message) => ({
     role: message.role === "assistant" ? "model" : "user",
     parts: [{ text: message.content }],
   }));
 
-  const body: Record<string, unknown> = { contents };
+  const body: GeminiBody = { contents };
   if (context) {
     body.systemInstruction = { parts: [{ text: context }] };
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
-    throw new Error("AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  const data = await res.json();
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const reply = await callGemini(body, {
+    errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
+  });
 
   if (typeof reply !== "string") {
     throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
@@ -56,13 +100,6 @@ export type ExtractedMedicine = {
 export async function extractMedicineNames(
   photoDataUrl: string
 ): Promise<ExtractedMedicine[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
-    );
-  }
-
   const match = photoDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) {
     throw new Error("사진 형식을 읽을 수 없어요.");
@@ -94,23 +131,10 @@ export async function extractMedicineNames(
     ],
   };
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
-    throw new Error("AI가 사진을 분석하지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  const data = await res.json();
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const reply = await callGemini(body, {
+    errorMessage: "AI가 사진을 분석하지 못했어요. 잠시 후 다시 시도해주세요.",
+    timeoutMs: 25_000, // 사진은 글보다 처리 시간이 길다
+  });
   if (typeof reply !== "string") return [];
 
   const cleaned = reply
@@ -143,13 +167,6 @@ export async function getMedicationPrecautions(
   name: string,
   photoDataUrl?: string | null
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
-    );
-  }
-
   const prompt =
     `"${name}"이라는 약의 복용 주의사항을 알려주세요. ` +
     "흔한 부작용, 함께 먹으면 안 되는 약/음식(병용금기), 복용 시 지켜야 할 점을 " +
@@ -172,23 +189,9 @@ export async function getMedicationPrecautions(
     contents: [{ role: "user", parts }],
   };
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
-    throw new Error("AI가 주의사항을 확인하지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  const data = await res.json();
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const reply = await callGemini(body, {
+    errorMessage: "AI가 주의사항을 확인하지 못했어요. 잠시 후 다시 시도해주세요.",
+  });
   if (typeof reply !== "string" || !reply.trim()) {
     throw new Error("AI가 주의사항을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
   }
@@ -199,13 +202,6 @@ export async function getMedicationPrecautions(
 export async function getBiometricAnalysis(
   readings: { measuredAt: string; heartRate: number }[]
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY가 설정되지 않았어요. .env.local 파일을 확인해주세요."
-    );
-  }
-
   const readingsText = readings
     .map((r) => `- ${r.measuredAt}: ${r.heartRate} bpm`)
     .join("\n");
@@ -223,23 +219,9 @@ export async function getBiometricAnalysis(
     contents: [{ role: "user", parts: [{ text: prompt }] }],
   };
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error(`Gemini API 오류 (${res.status}):`, errorBody);
-    throw new Error("AI가 분석하지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  const data = await res.json();
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const reply = await callGemini(body, {
+    errorMessage: "AI가 분석하지 못했어요. 잠시 후 다시 시도해주세요.",
+  });
   if (typeof reply !== "string" || !reply.trim()) {
     throw new Error("AI가 분석 결과를 만들지 못했어요. 잠시 후 다시 시도해주세요.");
   }
