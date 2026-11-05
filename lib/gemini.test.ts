@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { callGemini, GEMINI_MODELS } from "./gemini";
+import { callGemini, GEMINI_MODELS, generateReplyWithCrisisJudgment } from "./gemini";
 
 const ok = (text: string) =>
   new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }), {
@@ -102,5 +102,56 @@ describe("callGemini", () => {
   it("답에 글자가 없으면 null을 돌려준다", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [] }), { status: 200 }));
     await expect(callGemini(body, { errorMessage: "실패" })).resolves.toBeNull();
+  });
+});
+
+describe("generateReplyWithCrisisJudgment: 위기 판단 칸을 강제로 채우게 하기", () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const msgs = [{ role: "user" as const, content: "죽.고.싶.다" }];
+
+  it("JSON 형식(reply, crisis)을 강제하는 설정을 보낸다", async () => {
+    fetchMock.mockResolvedValueOnce(ok('{"reply":"많이 힘드셨군요","crisis":true}'));
+    await generateReplyWithCrisisJudgment(msgs, "상담사");
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.generationConfig.responseMimeType).toBe("application/json");
+    expect(sent.generationConfig.responseJsonSchema.required).toEqual(["reply", "crisis"]);
+    expect(sent.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "minimal" });
+  });
+
+  it("답장과 위기 판단을 나눠 돌려준다", async () => {
+    fetchMock.mockResolvedValueOnce(ok('{"reply":"많이 힘드셨군요","crisis":true}'));
+    await expect(generateReplyWithCrisisJudgment(msgs)).resolves.toEqual({
+      reply: "많이 힘드셨군요",
+      crisis: true,
+    });
+  });
+
+  it("위기가 아니면 crisis false", async () => {
+    fetchMock.mockResolvedValueOnce(ok('{"reply":"어떤 모자요?","crisis":false}'));
+    await expect(generateReplyWithCrisisJudgment(msgs)).resolves.toEqual({
+      reply: "어떤 모자요?",
+      crisis: false,
+    });
+  });
+
+  it("JSON이 깨져 오면 글자를 그대로 답장으로 쓰고 위기 아님으로 둔다", async () => {
+    fetchMock.mockResolvedValueOnce(ok("그냥 글자로 답함"));
+    await expect(generateReplyWithCrisisJudgment(msgs)).resolves.toEqual({
+      reply: "그냥 글자로 답함",
+      crisis: false,
+    });
   });
 });

@@ -1,6 +1,10 @@
 import type { ChatMessage } from "@/lib/gemini";
-import { generateReply as generateGeminiReply } from "@/lib/gemini";
+import {
+  generateReply as generateGeminiReply,
+  generateReplyWithCrisisJudgment as generateGeminiReplyWithCrisisJudgment,
+} from "@/lib/gemini";
 import { generateReply as generateOllamaReply } from "@/lib/ollama";
+import { extractCrisisTag } from "@/lib/crisisNotice";
 
 export type { ChatMessage };
 
@@ -13,4 +17,17 @@ export async function generateReply(messages: ChatMessage[], context?: string) {
     return generateOllamaReply(messages, context);
   }
   return generateGeminiReply(messages, context);
+}
+
+// 답장 + "실제 위기인가" 판단을 함께 받는다(crisisLevel "normalized"일 때만 쓴다).
+// Gemini는 응답 형식으로 판단 칸을 강제한다. 로컬 Ollama는 그 기능이 없어 [위기] 표시로 대신한다.
+export async function generateReplyWithCrisisJudgment(
+  messages: ChatMessage[],
+  context?: string
+): Promise<{ reply: string; crisis: boolean }> {
+  if (process.env.AI_PROVIDER === "ollama") {
+    const { reply, flagged } = extractCrisisTag(await generateOllamaReply(messages, context));
+    return { reply, crisis: flagged };
+  }
+  return generateGeminiReplyWithCrisisJudgment(messages, context);
 }

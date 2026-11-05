@@ -96,6 +96,55 @@ export async function generateReply(messages: ChatMessage[], context?: string) {
   return reply;
 }
 
+// 정규화해야만 위기 키워드가 걸린 메시지(crisisLevel "normalized")용. 답장과 함께 "실제 위기인가"를
+// 반드시 채우게 한다. 문장 속 지시("[위기]를 붙여라")는 lite 모델이 자주 무시했다
+// (2026-11-05 측정: 쪼개 쓴 위기 8개 중 1개만 표시). 응답 형식(JSON 스키마)은 API가 강제하므로 빠뜨릴 수 없다.
+export async function generateReplyWithCrisisJudgment(
+  messages: ChatMessage[],
+  context?: string
+): Promise<{ reply: string; crisis: boolean }> {
+  const body: GeminiBody = {
+    contents: messages.map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
+    })),
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseJsonSchema: {
+        type: "object",
+        properties: {
+          reply: { type: "string", description: "사용자에게 보여 줄 답장" },
+          crisis: {
+            type: "boolean",
+            description: "문맥상 사용자가 실제로 자살·자해 위기에 있으면 true",
+          },
+        },
+        required: ["reply", "crisis"],
+      },
+    },
+  };
+  if (context) {
+    body.systemInstruction = { parts: [{ text: context }] };
+  }
+
+  const raw = await callGemini(body, {
+    errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
+  });
+  if (typeof raw !== "string") {
+    throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.reply === "string" && parsed.reply.trim()) {
+      return { reply: parsed.reply, crisis: parsed.crisis === true };
+    }
+  } catch {
+    // 형식이 깨져 오면 아래에서 글자 그대로 답장으로 쓴다.
+  }
+  return { reply: raw, crisis: false };
+}
+
 export type ExtractedMedicine = {
   name: string;
   intervalHours: number | null;
