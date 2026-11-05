@@ -65,6 +65,7 @@ git log --grep "Code-Origin: 바이브"  # 바이브 코딩 커밋만
 | 2026-11-04 | `lib/algorithms/ahoCorasick.ts` | 아호코라식 TypeScript 포팅 (23/23) | `TrieNode` 타입, `newNode`, `insert`, `buildFail`, `countMatches` (05의 C 코드를 직접 옮김) | 뼈대(설명 주석, 빈 클래스와 메서드 이름), 테스트 23개와 Vitest 설정(`ahoCorasick.test.ts`), TS 문법 설명과 C → TS 대응표, 리뷰. `private root: TrieNode = newNode();` 한 줄과 constructor의 `for`문은 Claude가 보여 준 답을 직접 타이핑 | §11 |
 | 2026-11-05 | `lib/algorithms/normalize.ts` | 정규화 함수, for문과 정규식 두 버전 (12/12) | `normalize`의 `if` 조건(네 범위), `normalizeRegex` 함수(빈칸 틀을 보고 작성), 테스트 두 줄(`자A살`, `자_해!`) | 규칙 정리, 뼈대(`for`문과 `if (true)`), 테스트 6개와 `describe.each` 구조(`normalize.test.ts`), 정규식 문법 설명과 빈칸 틀, 속도 측정 스크립트, 리뷰 | §11 |
 | 2026-11-05 | `lib/crisisDetection.ts` | 위기 감지를 정규화 + 아호코라식으로 교체 (회귀 18/18) | import 두 줄, `matcher`(키워드에 `normalizeRegex` 적용 후 `AhoCorasick` 생성), `containsCrisisSignal` 본문(메시지 정규화 후 `countMatches > 0`), 안 쓰는 `CRISIS_SAFETY_MESSAGE` 삭제, 키워드 쪽 정규화를 남기기로 한 판단 | 회귀 테스트 18개(`crisisDetection.test.ts`), 빈칸 틀(`.map(____)`, `countMatches(____) > 0`), 실패 9개의 공통점 힌트, 리뷰 | §11 |
+| 2026-11-05 | `lib/crisisDetection.ts` | 단계별 판정 `crisisLevel()` (direct / normalized / none, 79/79) | `CrisisLevel` 타입, `rawMatcher`, `crisisLevel` 본문 전체(원문 검사 → 정규화 검사 순서) | 테스트 12개, 빈칸 틀과 C enum 비교, "왜 나누나" 설명, 26번째 줄(원문에 정규화를 씌운 것) 힌트, 리뷰. Gemini 연결·저장·화면(`route.ts`, `crisisNotice.ts`, `chatHistory.ts`)은 바이브 | §11 |
 
 `study/`의 C 코드는 처음에 `~/algorithm-study`(Mac 로컬)에서 작성했고, 2026-10-07에 저장소로 옮겼다. 첫 줄 `[직접 작성]` 표시 외에는 작성한 그대로다.
 
