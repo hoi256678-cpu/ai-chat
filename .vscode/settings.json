@@ -1,0 +1,6 @@
+{
+  // 직접 작성(lib/algorithms 등) 연습용: 이 저장소에서 AI 자동완성 끄기 (다른 프로젝트엔 영향 없음)
+  "github.copilot.enable": { "*": false },
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "editor.inlineSuggest.enabled": false
+}

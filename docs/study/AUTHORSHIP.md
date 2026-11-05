@@ -1,6 +1,6 @@
 # 코드 출처 구분: 바이브 코딩 vs 직접 작성
 
-> 최종 업데이트: 2026-11-04
+> 최종 업데이트: 2026-11-05
 
 이 저장소의 코드는 두 가지 방식으로 만들어진다. 면접과 자소서에서 "내가 직접 짠 부분"을 정확히 말할 수 있도록 둘을 구분해 기록한다.
 
@@ -63,6 +63,7 @@ git log --grep "Code-Origin: 바이브"  # 바이브 코딩 커밋만
 | 2026-10-13 | `study/04-failure-link/main.c` | BFS로 실패 링크 만들기 | `insert`의 `depth`, `find_node`, `build_fail`, `main` | 문제, 테스트, 채점기, 함수 뼈대, `build_fail` 반복부의 빈칸 뼈대(while 조건 포함), 리뷰 | §9 |
 | 2026-10-13~14 | `study/05-aho-corasick/main.c` | 숨은 금지어 찾기, 아호코라식 (13/13) | 전체 (`insert`, `build_fail`은 04에서 옮김, `build_fail`의 개수 미리 계산, `search`, `main`) | 문제, 테스트, 채점기, 리뷰, 단계별 힌트(검색 세 단계 의사코드, 미리 계산할 식과 위치) | §10 |
 | 2026-11-04 | `lib/algorithms/ahoCorasick.ts` | 아호코라식 TypeScript 포팅 (23/23) | `TrieNode` 타입, `newNode`, `insert`, `buildFail`, `countMatches` (05의 C 코드를 직접 옮김) | 뼈대(설명 주석, 빈 클래스와 메서드 이름), 테스트 23개와 Vitest 설정(`ahoCorasick.test.ts`), TS 문법 설명과 C → TS 대응표, 리뷰. `private root: TrieNode = newNode();` 한 줄과 constructor의 `for`문은 Claude가 보여 준 답을 직접 타이핑 | §11 |
+| 2026-11-05 | `lib/algorithms/normalize.ts` | 정규화 함수, for문과 정규식 두 버전 (12/12) | `normalize`의 `if` 조건(네 범위), `normalizeRegex` 함수(빈칸 틀을 보고 작성), 테스트 두 줄(`자A살`, `자_해!`) | 규칙 정리, 뼈대(`for`문과 `if (true)`), 테스트 6개와 `describe.each` 구조(`normalize.test.ts`), 정규식 문법 설명과 빈칸 틀, 속도 측정 스크립트, 리뷰 | §11 |
 
 `study/`의 C 코드는 처음에 `~/algorithm-study`(Mac 로컬)에서 작성했고, 2026-10-07에 저장소로 옮겼다. 첫 줄 `[직접 작성]` 표시 외에는 작성한 그대로다.
 
