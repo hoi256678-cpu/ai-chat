@@ -4,8 +4,9 @@ export type StoredMessage = {
   role: "user" | "assistant";
   content: string;
   time: string;
-  // AI 답변 밑에 위기 안내 띠를 붙일지 (원문 키워드 또는 AI가 위기로 판단). DB messages.crisis.
-  crisis?: boolean;
+  // 서버의 최종 판정: AI 답변 밑에 위기 안내 띠를 붙일지. DB messages.crisis.
+  // 판정이 생기기 전 저장된 행은 null일 수 있다(그때는 화면이 원문 규칙으로 대신한다).
+  crisis?: boolean | null;
 };
 
 export function formatDateKey(date: Date) {

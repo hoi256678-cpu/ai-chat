@@ -50,6 +50,22 @@ describe("crisisNoticeAfter: 안내 띠를 붙일 메시지 위치", () => {
     const messages = [user("내일 모자 살 거야")];
     expect(crisisNoticeAfter(messages, false).size).toBe(0);
   });
+
+  // 서버의 최종 판정(답변의 crisis)이 저장돼 있으면 그 값을 따른다. 원문을 다시 검사하지 않는다.
+  it("저장된 판정이 false면 원문에 키워드가 있어도 붙이지 않는다", () => {
+    const messages = [user("어제 축구에서 자살골 넣었어"), { ...ai("아쉬웠겠네요"), crisis: false }];
+    expect(crisisNoticeAfter(messages, false).size).toBe(0);
+  });
+
+  it("저장된 판정이 true면 붙인다", () => {
+    const messages = [user("나 자살하고 싶어"), { ...ai("많이 힘드셨군요"), crisis: true }];
+    expect([...crisisNoticeAfter(messages, false)]).toEqual([1]);
+  });
+
+  it("판정이 저장되기 전 메시지(crisis가 null)는 원문 규칙으로 붙인다", () => {
+    const messages = [user("죽고싶다"), { ...ai("많이 힘드셨군요"), crisis: null }];
+    expect([...crisisNoticeAfter(messages, false)]).toEqual([1]);
+  });
 });
 
 describe("extractCrisisTag: AI 답변의 [위기] 표시 떼기", () => {
