@@ -62,3 +62,6 @@ ml-service/serve_log.txt
 ml-service/__pycache__/
 ml-service/**/__pycache__/
 .pytest_cache/
+
+# 빌드·테스트 때 내려받는 Kiwi 모델 (scripts/fetch-kiwi-model.mjs)
+/kiwi-model

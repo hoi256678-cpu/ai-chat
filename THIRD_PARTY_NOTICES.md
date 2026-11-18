@@ -18,3 +18,12 @@ theme tokens; the ~60 fine-grained anatomical regions per view were
 grouped onto this app's existing Korean symptom categories; the
 tap-to-select and pain-marker interaction is new and not part of the
 original work.
+
+## Kiwi (kiwi-nlp)
+
+The crisis-detection morpheme check uses Kiwi, the Korean Intelligent Word Identifier:
+
+- Package: kiwi-nlp 0.24.1 — https://www.npmjs.com/package/kiwi-nlp
+- Model: kiwi_model_v0.24.1_base — https://github.com/bab2min/Kiwi/releases/tag/v0.24.1
+- Copyright (c) bab2min
+- Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
