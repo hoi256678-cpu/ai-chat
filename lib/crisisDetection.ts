@@ -27,3 +27,14 @@ export function crisisLevel(text: string): CrisisLevel {
   if (matcher.countMatches(normalizeRegex(text)) > 0) return "normalized";   // 정규화해서 찾기 (지금 matcher 그대로)
   return "none";
 }
+// 형태소로 direct 다시 보기 (설계: docs/superpowers/specs/2026-11-18-crisis-kiwi-boundary-design.md)
+// 명사 키워드만 다시 본다. 구절 키워드("죽고 싶" 등)는 원문 규칙 그대로.
+export const NOUN_KEYWORDS = ["자살", "자해"] as const;
+
+// Kiwi 토큰 모양 (lib/kiwi.ts의 MorphToken과 같음). 이 파일은 브라우저에서도 쓰여서 kiwi를 import하지 않는다.
+export type Token = { form: string; tag: string; wordPosition: number };
+
+export function refineWithMorphemes(text: string, tokens: readonly Token[]): CrisisLevel {
+  // TODO(직접 작성): 설계 문서의 판정 규칙 표대로 채운다.
+  return crisisLevel(text);
+}
