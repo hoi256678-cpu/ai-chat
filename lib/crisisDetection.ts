@@ -36,5 +36,21 @@ export type Token = { form: string; tag: string; wordPosition: number };
 
 export function refineWithMorphemes(text: string, tokens: readonly Token[]): CrisisLevel {
   // TODO(직접 작성): 설계 문서의 판정 규칙 표대로 채운다.
-  return crisisLevel(text);
+  const level = crisisLevel(text);
+
+  if(level != "direct")
+    return level;
+
+  for(const k of CRISIS_KEYWORDS) {
+
+  }
+
+  for(let i = 0; i < tokens.length; i++) {
+    const cur = tokens[i];
+    const next = tokens[i+1];
+
+
+  }
+
+  return "normalized";
 }
