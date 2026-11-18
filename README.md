@@ -63,7 +63,6 @@
 | 지도 · 병원 검색 | **카카오 로컬 / 지도 API** | 처음에는 네이버 API를 썼는데, 카카오 키워드 검색은 좌표와 반경을 바로 받아 거리순으로 돌려줍니다. 주소 변환 단계가 하나 줄어서 옮겼습니다. |
 | 이미지 모델 | **PyTorch**, EfficientNet-B0 전이학습 | GPU 12GB와 개발 기간 한 달 안에서 처음부터 학습하는 것은 무리였습니다. ImageNet으로 사전학습된 가벼운 모델을 가져와 피부 병변 4종에 맞게 다시 학습했습니다. |
 | 모델 서빙 | **FastAPI** | 모델이 Python이라 같은 언어로 `POST /predict` 하나만 여는 작은 서버를 따로 두었습니다. 웹앱과 코드를 공유하지 않아서, 서버가 꺼져도 웹앱은 영향을 받지 않습니다. |
-| 안드로이드 · 워치 | **Capacitor** + Kotlin 플러그인, Health Connect | 웹앱만으로는 워치 심박 데이터를 읽을 수 없습니다. 배포된 웹앱을 앱으로 감싸고, 삼성 헬스가 Health Connect에 동기화한 기록을 네이티브 플러그인으로 읽습니다. 워치 전용 앱을 따로 만들지 않아도 됩니다. |
 | 배포 | **Vercel** | GitHub에 push하면 자동으로 배포됩니다. |
 
 ## 아키텍처
@@ -71,23 +70,15 @@
 ```mermaid
 flowchart TB
     subgraph Client["사용자 기기"]
-        B["모바일 브라우저"]
-        subgraph APK["Android 앱 (Capacitor)"]
-            WV["WebView<br/>배포된 웹앱"]
-            HCP["HealthConnectPlugin<br/>(Kotlin)"]
-        end
-        Watch["갤럭시 워치"] -.->|삼성 헬스 동기화| HC["Health Connect"]
-        HC --> HCP
-        HCP -->|JS 브리지| WV
+        B["PC · 모바일 브라우저"]
     end
 
     subgraph Vercel["Vercel"]
         Pages["Next.js 페이지<br/>(proxy.ts 로그인 확인)"]
-        API["API 라우트<br/>/api/chat · /api/symptom-check<br/>/api/hospitals · /api/medications/*<br/>/api/biometrics/analyze"]
+        API["API 라우트<br/>/api/chat · /api/symptom-check<br/>/api/hospitals · /api/medications/*"]
     end
 
     B --> Pages
-    WV --> Pages
     Pages -->|fetch| API
     Pages -->|"직접 읽기/쓰기 (RLS)"| DB[("Supabase<br/>Auth + Postgres")]
     API --> Gemini["Gemini API"]
@@ -98,7 +89,7 @@ flowchart TB
 
 - **두 갈래의 데이터 경로:** 기록 저장과 조회는 브라우저에서 Supabase로 직접 갑니다. RLS가 사용자를 구분해서 중간 서버가 필요 없습니다. 외부 API 키가 필요한 호출(AI, 병원 검색, 이미지 분류)만 서버 라우트를 거칩니다.
 - **로그인 확인은 한 곳에서:** `proxy.ts`가 보호할 페이지 목록만 지정해 로그인 여부를 확인합니다. 페이지마다 따로 두었던 확인 코드 5개를 이 파일 하나로 합쳤습니다. `/api/*`는 이 목록에 넣지 않아서, Supabase 장애가 AI 기능까지 막지 않습니다.
-- **선택 기능은 꺼져도 괜찮게:** ML 서버나 워치 연동이 없어도 나머지 기능은 그대로 동작합니다.
+- **선택 기능은 꺼져도 괜찮게:** ML 서버가 없어도 피부 사진 분석만 빠지고 나머지 기능은 그대로 동작합니다.
 
 ## 주요 흐름
 
@@ -145,7 +136,7 @@ sequenceDiagram
     participant A as /api/chat
     participant G as Gemini
 
-    C->>DB: 입장 시 한 번 조회<br/>(오늘 대화, 복약 현황, 최근 증상 3건, 심박 요약)
+    C->>DB: 입장 시 한 번 조회<br/>(오늘 대화, 복약 현황, 최근 증상 3건)
     U->>C: 메시지 입력
     C->>A: 대화 + 상담사 페르소나 + 내 기록 요약
     Note over A: crisisLevel() 판정 (lib/crisisDetection.ts)<br/>정규화 + Aho-Corasick
@@ -185,33 +176,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><b>4. 갤럭시 워치 심박수 연동 (개발 중)</b></summary>
-
-```mermaid
-sequenceDiagram
-    participant W as 갤럭시 워치
-    participant SH as 삼성 헬스
-    participant HC as Health Connect
-    participant PL as HealthConnectPlugin
-    participant WEB as 웹앱 (WebView)
-    participant DB as Supabase
-    participant A as /api/biometrics/analyze
-
-    W->>SH: 심박 측정 (자동 동기화)
-    SH->>HC: 기록 저장
-    WEB->>PL: 권한 요청 (최초 1회)
-    WEB->>DB: 마지막 저장 시각 조회
-    WEB->>PL: 그 이후 심박 기록 요청
-    PL->>HC: HeartRateRecord 조회
-    PL-->>WEB: 측정 시각 + bpm 목록
-    WEB->>DB: 저장 (중복은 무시)
-    WEB->>A: "분석하기" → 최근 측정값
-    A-->>WEB: Gemini 해석 (의료기관 확인 안내 포함)
-```
-</details>
-
-<details>
-<summary><b>5. 회원가입 · 로그인 · 페이지 보호</b></summary>
+<summary><b>4. 회원가입 · 로그인 · 페이지 보호</b></summary>
 
 ```mermaid
 flowchart LR
@@ -282,7 +247,6 @@ flowchart LR
 
 - **ML 서버 상시 배포**: 지금은 ML 서버를 로컬 PC에서 실행하고 터널로 연결합니다. 클라우드 상시 배포가 다음 목표입니다.
 - **확신도 보정**: 의료에서는 정확도만큼 "확신도를 믿을 수 있는가"가 중요하다고 보고, temperature scaling 등 보정 기법을 적용해 보려 합니다.
-- **웨어러블 연동**: 갤럭시 워치 심박 데이터 연동(Health Connect)과 Android 앱은 개발 중이며 아직 검증 전입니다.
 
 ## 실행 방법
 
@@ -318,21 +282,20 @@ ai-chat/
 │   ├── chat/                   #   오늘의 AI 상담 채팅
 │   ├── chats/                  #   지난 대화 달력 → [date] 날짜별 다시 보기
 │   ├── medications/            #   복약 카드 + 오늘 체크리스트, add/ 약 등록
-│   ├── health-records/         #   증상 기록 · 워치 데이터 탭
+│   ├── health-records/         #   지난 증상 기록
 │   ├── settings/               #   닉네임 변경
 │   └── api/                    #   서버 전용 (API 키는 여기서만 사용)
 │       ├── chat/               #     위기 감지 → Gemini 상담
 │       ├── symptom-check/      #     (피부 분류) → Gemini 증상 분석
 │       ├── hospitals/          #     카카오 로컬 병원 검색
-│       ├── medications/        #     extract(사진 → 약 이름), precautions(주의사항)
-│       └── biometrics/analyze/ #     심박수 Gemini 해석
+│       └── medications/        #     extract(사진 → 약 이름), precautions(주의사항)
 ├── components/                 # UI 컴포넌트
 │   ├── BodyDiagram.tsx         #   부위를 고르는 인체 그림 (SVG)
 │   ├── HospitalMap.tsx         #   위치 확인 + 카카오 지도 마커
 │   ├── SymptomResultView.tsx   #   증상 분석 결과 화면
 │   ├── CardDeck.tsx            #   넘기는 카드 묶음 (복약, 증상 기록)
 │   ├── DoseToaster.tsx         #   어느 화면에서나 뜨는 복용 알림
-│   └── ...                     #   채팅 말풍선, 심박 차트, 상세 시트 등
+│   └── ...                     #   채팅 말풍선, 상세 시트 등
 ├── lib/                        # 화면과 분리한 로직
 │   ├── ai.ts                   #   AI 라우터 (Gemini / 개발용 Ollama)
 │   ├── gemini.ts · ollama.ts   #   각 모델 REST 호출
@@ -344,8 +307,7 @@ ai-chat/
 │   ├── hospitals.ts            #   카카오 로컬 검색
 │   ├── medications.ts          #   복약 CRUD, 복용 시각 생성, 오늘 체크리스트 계산
 │   ├── doseNotifications.ts    #   복용 알림 (본 것 / 띄운 것 따로 관리)
-│   ├── chatHistory.ts · symptomHistory.ts · biometrics.ts  # Supabase 기록 읽기/쓰기
-│   ├── nativeHealthConnect.ts  #   Capacitor 플러그인 JS 쪽 연결
+│   ├── chatHistory.ts · symptomHistory.ts  # Supabase 기록 읽기/쓰기
 │   └── supabase/client.ts      #   브라우저용 Supabase 클라이언트 (쿠키 세션)
 ├── proxy.ts                    # 보호 페이지 로그인 확인 (Next 16의 middleware)
 ├── supabase/schema.sql         # 테이블 + RLS 정책
@@ -355,8 +317,6 @@ ai-chat/
 │   ├── train.py · model.py     #   EfficientNet-B0 전이학습
 │   ├── serve.py                #   FastAPI POST /predict
 │   └── test_*.py               #   단계별 pytest
-├── android-shell/              # Capacitor 안드로이드 앱
-│   └── android/.../HealthConnectPlugin.kt  # Health Connect 심박 읽기
 ├── study/                      # Aho-Corasick C 구현 + 자체 채점기
 └── docs/
     ├── superpowers/            #   기능별 설계(specs) · 구현 계획(plans)
