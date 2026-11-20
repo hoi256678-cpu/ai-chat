@@ -17,16 +17,16 @@
 
 ## 2. 졸작 프로젝트 구조 이해
 
-알고리즘을 넣기 전에 졸작이 어떤 언어와 환경으로 돌아가는지부터 정리했다. 요약하면 화면과 서버는 TypeScript 하나로, AI 모델은 Python으로, 웨어러블 연동은 Kotlin으로 되어 있다.
+알고리즘을 넣기 전에 졸작이 어떤 언어와 환경으로 돌아가는지부터 정리했다. 요약하면 화면과 서버는 TypeScript 하나로, AI 모델은 Python으로 되어 있다. (처음 정리할 때는 Capacitor 안드로이드 앱과 Kotlin 워치 연동도 있었지만, 실제 기기로 검증하지 못해 2026-11-20에 삭제했다. 아래 그림과 표는 삭제 후 기준이다.)
 
 ```
                     비밀 키가 필요한 호출만 Next.js 서버를 거친다
 
 ┌─────────────────────────┐      ┌──────────────────────────────┐      ┌──────────────────────┐
-│ 브라우저 · 안드로이드 앱  │─────▶│ Next.js API 라우트  ★          │─────▶│ Gemini API           │
+│ 브라우저 (PC · 모바일)    │─────▶│ Next.js API 라우트  ★          │─────▶│ Gemini API           │
 │ React 19 화면 (TS)       │      │ Vercel 서버리스 · TypeScript  │      │ AI 답변 생성          │
-│ Capacitor로 앱 포장       │      │ 비밀 키: Gemini, Kakao REST   │      └──────────────────────┘
-│ Kotlin: Health Connect   │      │ 위기 감지 (과제 A 적용 위치)   │─────▶┌──────────────────────┐
+│ 채팅방 진입 시 Kiwi 예열  │      │ 비밀 키: Gemini, Kakao REST   │      └──────────────────────┘
+│                          │      │ 위기 감지 (과제 A) + Kiwi     │─────▶┌──────────────────────┐
 └────────────┬────────────┘      └──────────────┬───────────────┘      │ Kakao Local API       │
              │ 브라우저가 직접 호출                │                      │ 근처 병원 검색        │
              │                                   │                      └──────────────────────┘
@@ -48,7 +48,6 @@
 | TypeScript (.ts) | 29 | lib/, app/api/, proxy.ts | 서버 로직, API, 유틸 함수 |
 | TypeScript + JSX (.tsx) | 25 | app/\*\*/page.tsx, components/ | 화면 (React 컴포넌트) |
 | Python (.py) | 10 | ml-service/ | 피부 사진 분류 모델 학습과 서빙 (PyTorch, FastAPI) |
-| Kotlin (.kt) | 2 | android-shell/ | Health Connect에서 워치 심박수 읽기 |
 
 JavaScript로 직접 쓴 기능 코드는 없다. TypeScript는 작성할 때의 언어이고, 빌드되면 JavaScript로 바뀌어 브라우저와 Node.js에서 실행된다.
 
