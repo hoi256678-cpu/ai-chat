@@ -14,6 +14,11 @@ create table if not exists public.messages (
 create index if not exists messages_user_date_idx
   on public.messages (user_id, date_key, created_at);
 
+-- 위기 안내 띠를 붙일지 (서버의 최종 판정, AI 답변 행에 저장). 2026-11-05에 추가.
+-- 실제 DB 정의를 2026-11-18에 확인해 옮겼다: boolean, NOT NULL, 기본값 false.
+-- 그래서 판정이 생기기 전 행도 false라 새 행과 구분되지 않는다(테스트 계정 데이터뿐).
+alter table public.messages add column if not exists crisis boolean not null default false;
+
 alter table public.messages enable row level security;
 
 create policy "select own messages"

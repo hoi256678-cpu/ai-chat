@@ -4,14 +4,15 @@ import { containsCrisisSignal, crisisLevel, CRISIS_KEYWORDS } from "./crisisDete
 // 단계별 판정: 원문 그대로 걸리면 "direct"(바로 안내), 정규화해야만 걸리면 "normalized"(AI가 판단),
 // 안 걸리면 "none".
 describe("crisisLevel 단계별 판정", () => {
-  it.each(["죽고 싶어", "그냥 죽고싶다", "자살 생각이 나요", "어제 자해했어"])(
+  // "살기싫다"는 2026-11-20에 붙여 쓴 형태를 키워드로 넣어 normalized에서 direct로 올렸다.
+  it.each(["죽고 싶어", "그냥 죽고싶다", "자살 생각이 나요", "어제 자해했어", "살기싫다"])(
     "원문 그대로 키워드가 있으면 direct: %s",
     (message) => {
       expect(crisisLevel(message)).toBe("direct");
     }
   );
 
-  it.each(["자 살", "죽.고.싶.다", "자ㅋㅋ해", "내일 모자 살 거야", "살기싫다"])(
+  it.each(["자 살", "죽.고.싶.다", "자ㅋㅋ해", "내일 모자 살 거야", "살.기.싫.어"])(
     "정규화해야만 걸리면 normalized: %s",
     (message) => {
       expect(crisisLevel(message)).toBe("normalized");

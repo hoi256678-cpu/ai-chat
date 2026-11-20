@@ -9,6 +9,15 @@ export const CRISIS_KEYWORDS = [
   "자해",
   "살기 싫",
   "사라지고 싶",
+  // 2026-11-20 추가 (목록은 사용자가 고름, 측정: 학습 기록 §12 "키워드 넓히기"):
+  // 붙여 쓴 형태 3개와, 지금 목록으로는 아예 못 잡던(none) 의도 표현 4개.
+  "살기싫",
+  "사라지고싶",
+  "죽어버리고싶",
+  "살고 싶지 않",
+  "그만 살고 싶",
+  "목숨을 끊",
+  "죽는 게 낫",
 ] as const;
 
 // [직접 작성] 정규화 + 아호코라식으로 위기 감지 교체 (matcher, containsCrisisSignal, rawMatcher, crisisLevel) — 학습 기록: docs/study/algorithm-study-log.md §11
@@ -26,4 +35,45 @@ export function crisisLevel(text: string): CrisisLevel {
   if (rawMatcher.countMatches(text) > 0) return "direct";       // 원문 그대로 찾기
   if (matcher.countMatches(normalizeRegex(text)) > 0) return "normalized";   // 정규화해서 찾기 (지금 matcher 그대로)
   return "none";
+}
+// 형태소로 direct 다시 보기 (설계: docs/superpowers/specs/2026-11-18-crisis-kiwi-boundary-design.md)
+// 명사 키워드만 다시 본다. 구절 키워드("죽고 싶" 등)는 원문 규칙 그대로.
+export const NOUN_KEYWORDS = ["자살", "자해"] as const;
+
+// Kiwi 토큰 모양 (lib/kiwi.ts의 MorphToken과 같음). 이 파일은 브라우저에서도 쓰여서 kiwi를 import하지 않는다.
+export type Token = { form: string; tag: string; wordPosition: number };
+
+// [직접 작성] 형태소로 direct 다시 보기 (refineWithMorphemes 본문) — 학습 기록: docs/study/algorithm-study-log.md §12
+export function refineWithMorphemes(text: string, tokens: readonly Token[]): CrisisLevel {
+  const level = crisisLevel(text);
+
+  if(level != "direct")
+    return level;
+
+  for(const k of CRISIS_KEYWORDS) {
+    if((NOUN_KEYWORDS as readonly string[]).includes(k)) {
+      continue;
+    }
+
+    if(text.includes(k)) {
+      return "direct";
+    }
+  }
+
+  for(let i = 0; i < tokens.length; i++) {
+    const cur = tokens[i];
+    const next = tokens[i+1];
+
+    if(!(NOUN_KEYWORDS as readonly string[]).includes(cur.form)) {
+      continue;
+    }
+
+    const compound = (next !== undefined) && (next.tag.startsWith("NN")) && (next.wordPosition === cur.wordPosition);
+
+    if(!compound) {
+      return "direct";
+    }
+  }
+
+  return "normalized";
 }

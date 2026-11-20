@@ -53,6 +53,11 @@ export default function ChatRoomPage() {
   const [biometrics, setBiometrics] = useState<BiometricRecord[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Kiwi(위기 판정용 형태소 분석기)를 미리 준비시킨다. 화면은 결과를 기다리지 않는다.
+  useEffect(() => {
+    fetch("/api/chat", { method: "GET" }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     getDayMessages(todayKey()).then((msgs) => {
       setMessages(msgs);

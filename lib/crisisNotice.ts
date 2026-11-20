@@ -39,14 +39,15 @@ export function extractCrisisTag(reply: string): { reply: string; flagged: boole
   return { reply: reply.split(CRISIS_TAG).join("").trim(), flagged };
 }
 
-type Message = { role: "user" | "assistant"; content: string; crisis?: boolean };
+type Message = { role: "user" | "assistant"; content: string; crisis?: boolean | null };
 
 // 안내 띠를 "몇 번째 메시지 밑에" 붙일지 계산한다. 사용자 메시지마다:
-// - 원문 그대로 키워드가 있거나(direct), 다음 AI 답변이 위기로 판단됐으면(crisis) 안내 대상
+// - 다음 AI 답변에 서버의 최종 판정(crisis)이 저장돼 있으면 그 값만 따른다. 서버는 원문 검사,
+//   형태소 재검사, AI 판단을 모두 거쳐 판정하므로 화면에서 원문을 다시 검사하면 안 된다.
+// - 판정이 없을 때(판정이 생기기 전 저장된 옛 메시지, 답변 없이 끝난 메시지)만 원문 direct로 대신한다.
 // - 바로 다음이 AI 답변이면 그 답변 밑에 붙인다
 // - 답변 없이 끝났으면(오류) direct일 때만 사용자 메시지 밑에 붙인다
 //   (normalized는 AI 판단이 없으니 붙이지 않는다). 답변을 기다리는 중이면 아직 붙이지 않는다.
-// crisis 칸이 생기기 전에 저장된 메시지도 direct는 다시 검사해서 붙는다.
 export function crisisNoticeAfter(messages: readonly Message[], loading: boolean): Set<number> {
   const result = new Set<number>();
 
@@ -54,9 +55,9 @@ export function crisisNoticeAfter(messages: readonly Message[], loading: boolean
     if (message.role !== "user") return;
 
     const next = messages[i + 1];
-    const direct = crisisLevel(message.content) === "direct";
-    const judgedCrisis = next?.role === "assistant" && next.crisis === true;
-    if (!direct && !judgedCrisis) return;
+    const stored = next?.role === "assistant" && typeof next.crisis === "boolean" ? next.crisis : null;
+    const show = stored ?? crisisLevel(message.content) === "direct";
+    if (!show) return;
 
     if (next?.role === "assistant") {
       result.add(i + 1);
