@@ -1,3 +1,5 @@
+import { KOREAN_ONLY_INSTRUCTION, retryIfForeign } from "./replyLanguage";
+
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -74,26 +76,29 @@ export async function callGemini(
   throw new Error(errorMessage);
 }
 
+// 상담 답장의 시스템 지시: 화면이 넘긴 맥락 뒤에 "한국어로만" 지시를 항상 붙인다(lib/replyLanguage.ts).
+function chatInstruction(context?: string) {
+  return { parts: [{ text: [context, KOREAN_ONLY_INSTRUCTION].filter(Boolean).join("\n\n") }] };
+}
+
 export async function generateReply(messages: ChatMessage[], context?: string) {
   const contents = messages.map((message) => ({
     role: message.role === "assistant" ? "model" : "user",
     parts: [{ text: message.content }],
   }));
 
-  const body: GeminiBody = { contents };
-  if (context) {
-    body.systemInstruction = { parts: [{ text: context }] };
-  }
+  const body: GeminiBody = { contents, systemInstruction: chatInstruction(context) };
 
-  const reply = await callGemini(body, {
-    errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
-  });
-
-  if (typeof reply !== "string") {
-    throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  return reply;
+  // 외국 글자가 섞인 답이면 한 번만 다시 받는다.
+  return retryIfForeign(async () => {
+    const reply = await callGemini(body, {
+      errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
+    });
+    if (typeof reply !== "string") {
+      throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+    return reply;
+  }, (reply) => reply);
 }
 
 // 정규화해야만 위기 키워드가 걸린 메시지(crisisLevel "normalized")용. 답장과 함께 "실제 위기인가"를
@@ -123,26 +128,27 @@ export async function generateReplyWithCrisisJudgment(
       },
     },
   };
-  if (context) {
-    body.systemInstruction = { parts: [{ text: context }] };
-  }
+  body.systemInstruction = chatInstruction(context);
 
-  const raw = await callGemini(body, {
-    errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
-  });
-  if (typeof raw !== "string") {
-    throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (typeof parsed?.reply === "string" && parsed.reply.trim()) {
-      return { reply: parsed.reply, crisis: parsed.crisis === true };
+  // 외국 글자가 섞인 답장이면 한 번만 다시 받는다(위기 판단도 함께 새로 받음).
+  return retryIfForeign(async () => {
+    const raw = await callGemini(body, {
+      errorMessage: "AI가 응답하지 못했어요. 잠시 후 다시 시도해주세요.",
+    });
+    if (typeof raw !== "string") {
+      throw new Error("AI가 응답을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
     }
-  } catch {
-    // 형식이 깨져 오면 아래에서 글자 그대로 답장으로 쓴다.
-  }
-  return { reply: raw, crisis: false };
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.reply === "string" && parsed.reply.trim()) {
+        return { reply: parsed.reply, crisis: parsed.crisis === true };
+      }
+    } catch {
+      // 형식이 깨져 오면 아래에서 글자 그대로 답장으로 쓴다.
+    }
+    return { reply: raw, crisis: false };
+  }, (result) => result.reply);
 }
 
 export type ExtractedMedicine = {
