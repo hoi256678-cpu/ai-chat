@@ -34,22 +34,36 @@ export const NOUN_KEYWORDS = ["자살", "자해"] as const;
 // Kiwi 토큰 모양 (lib/kiwi.ts의 MorphToken과 같음). 이 파일은 브라우저에서도 쓰여서 kiwi를 import하지 않는다.
 export type Token = { form: string; tag: string; wordPosition: number };
 
+// [직접 작성] 형태소로 direct 다시 보기 (refineWithMorphemes 본문) — 학습 기록: docs/study/algorithm-study-log.md §12
 export function refineWithMorphemes(text: string, tokens: readonly Token[]): CrisisLevel {
-  // TODO(직접 작성): 설계 문서의 판정 규칙 표대로 채운다.
   const level = crisisLevel(text);
 
   if(level != "direct")
     return level;
 
   for(const k of CRISIS_KEYWORDS) {
+    if((NOUN_KEYWORDS as readonly string[]).includes(k)) {
+      continue;
+    }
 
+    if(text.includes(k)) {
+      return "direct";
+    }
   }
 
   for(let i = 0; i < tokens.length; i++) {
     const cur = tokens[i];
     const next = tokens[i+1];
 
+    if(!(NOUN_KEYWORDS as readonly string[]).includes(cur.form)) {
+      continue;
+    }
 
+    const compound = (next !== undefined) && (next.tag.startsWith("NN")) && (next.wordPosition === cur.wordPosition);
+
+    if(!compound) {
+      return "direct";
+    }
   }
 
   return "normalized";
