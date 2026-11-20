@@ -22,11 +22,6 @@ import {
   buildSymptomHistoryContext,
   type SymptomCheckRecord,
 } from "@/lib/symptomHistory";
-import {
-  getRecentBiometrics,
-  buildBiometricContext,
-  type BiometricRecord,
-} from "@/lib/biometrics";
 import { CHAT_PERSONA_PROMPT } from "@/lib/chatPersona";
 import { ChatMessages } from "@/components/ChatMessages";
 import { messageForUser, UserFacingError } from "@/lib/userFacingError";
@@ -50,7 +45,6 @@ export default function ChatRoomPage() {
   const [medications, setMedications] = useState<MedicationRecord[]>([]);
   const [todayDoseSlots, setTodayDoseSlots] = useState<DoseSlot[]>([]);
   const [symptomChecks, setSymptomChecks] = useState<SymptomCheckRecord[]>([]);
-  const [biometrics, setBiometrics] = useState<BiometricRecord[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Kiwi(위기 판정용 형태소 분석기)를 미리 준비시킨다. 화면은 결과를 기다리지 않는다.
@@ -75,9 +69,6 @@ export default function ChatRoomPage() {
       .catch(() => {});
     getSymptomChecks(3)
       .then(setSymptomChecks)
-      .catch(() => {});
-    getRecentBiometrics()
-      .then(setBiometrics)
       .catch(() => {});
   }, []);
 
@@ -114,7 +105,6 @@ export default function ChatRoomPage() {
             buildEventContext(upcomingEvents),
             buildMedicationContext(medications, todayDoseSlots, todayKey()),
             buildSymptomHistoryContext(symptomChecks),
-            buildBiometricContext(biometrics),
           ]
             .filter(Boolean)
             .join("\n\n"),
