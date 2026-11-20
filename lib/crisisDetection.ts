@@ -9,6 +9,15 @@ export const CRISIS_KEYWORDS = [
   "자해",
   "살기 싫",
   "사라지고 싶",
+  // 2026-11-20 추가 (목록은 사용자가 고름, 측정: 학습 기록 §12 "키워드 넓히기"):
+  // 붙여 쓴 형태 3개와, 지금 목록으로는 아예 못 잡던(none) 의도 표현 4개.
+  "살기싫",
+  "사라지고싶",
+  "죽어버리고싶",
+  "살고 싶지 않",
+  "그만 살고 싶",
+  "목숨을 끊",
+  "죽는 게 낫",
 ] as const;
 
 // [직접 작성] 정규화 + 아호코라식으로 위기 감지 교체 (matcher, containsCrisisSignal, rawMatcher, crisisLevel) — 학습 기록: docs/study/algorithm-study-log.md §11
