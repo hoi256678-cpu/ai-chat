@@ -233,7 +233,7 @@ export default function MainClient({ initialName }: { initialName: string }) {
             <MenuCard
               onClick={() => router.push("/health-records")}
               label="내 건강 기록"
-              description="증상 기록과 워치 데이터 한눈에 보기"
+              description="지난 증상 체크 기록 다시 보기"
               icon={
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
